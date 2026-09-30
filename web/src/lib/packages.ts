@@ -6,6 +6,10 @@ export const DURATIONS = [
   { days: 90, label: '3 months' },
   { days: 180, label: '6 months' },
   { days: 365, label: '1 year' },
+  { days: 730, label: '2 years' },
+  { days: 1095, label: '3 years' },
+  { days: 1460, label: '4 years' },
+  { days: 1825, label: '5 years' },
 ] as const;
 
 export const AGE_PRESETS = [
@@ -15,7 +19,10 @@ export const AGE_PRESETS = [
   { from: 1, to: 18, label: 'All ages' },
 ] as const;
 
-/** A plan's length in words. Plans are stored in days, and a subscription lasts exactly that many days from the day it is assigned. */
+/**
+ * A plan's length in words. Plans are stored in days, and a subscription lasts exactly that many days from the day it is assigned,
+ * so "1 year" is 365 days and "2 years" is 730 (leap days are not added).
+ */
 export function durationLabel(days: number): string {
   const preset = DURATIONS.find(d => d.days === days);
   if (preset) return preset.label;

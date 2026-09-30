@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { draftFrom, durationLabel, emptyDraft, planSummary, statusPayload, toPayload, validateDraft } from './packages';
+import { DURATIONS, draftFrom, durationLabel, emptyDraft, planSummary, statusPayload, toPayload, validateDraft } from './packages';
 import type { PackageRow } from './types';
 
 const inr = (n: number) => `₹${n}`;
@@ -11,7 +11,12 @@ const pkg = (over: Partial<PackageRow> = {}): PackageRow => ({
 describe('durationLabel', () => {
   it('uses words for common lengths and falls back sensibly', () => {
     expect([30, 90, 180, 365].map(durationLabel)).toEqual(['1 month', '3 months', '6 months', '1 year']);
-    expect([730, 60, 45, 1].map(durationLabel)).toEqual(['2 years', '2 months', '45 days', '1 day']);
+    expect([730, 1095, 1460, 1825].map(durationLabel)).toEqual(['2 years', '3 years', '4 years', '5 years']);
+    expect([2190, 60, 45, 1].map(durationLabel)).toEqual(['6 years', '2 months', '45 days', '1 day']);
+  });
+
+  it('offers exactly 1 month, 3 months, 6 months and 1 to 5 years as presets, in whole days', () => {
+    expect(DURATIONS.map(d => [d.label, d.days])).toEqual([['1 month', 30], ['3 months', 90], ['6 months', 180], ['1 year', 365], ['2 years', 730], ['3 years', 1095], ['4 years', 1460], ['5 years', 1825]]);
   });
 });
 
