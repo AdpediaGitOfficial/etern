@@ -7,12 +7,18 @@ import { PanelError } from '@/components/ui';
 import { inr, num } from '@/lib/format';
 import type { Revenue, Stats, SubscriptionPoint } from '@/lib/types';
 import type { Metric } from './MetricDrawer';
+import Delta from './Delta';
 import Sparkline from './Sparkline';
 
 interface Props {
   stats: Result<Stats>;
   revenue: Result<Revenue>;
   chart: Result<SubscriptionPoint[]>;
+  /** "this month", "in the last 7 days" ... */
+  phrase: string;
+  label: string;
+  /** The same figures for the previous period, when Compare is on. */
+  previous: { stats: Result<Stats>; revenue: Result<Revenue> } | null;
   onOpen: (metric: Metric) => void;
   retry: () => void;
   busy: boolean;
@@ -39,25 +45,27 @@ function Kpi({ metric, label, icon, tone, ok, value, foot, onOpen, retry, busy }
   );
 }
 
-export default function KpiStrip({ stats, revenue, chart, onOpen, retry, busy }: Props) {
+export default function KpiStrip({ stats, revenue, chart, phrase, label: periodLabel, previous, onOpen, retry, busy }: Props) {
   const s = stats.ok ? stats.data : null;
   const daily = chart.ok ? (chart.data ?? []).map(p => Number(p.total_subscriptions) || 0) : [];
   const conv = s && s.registeredThisMonth > 0 ? (s.subscribedThisMonth / s.registeredThisMonth) * 100 : null;
   const g = revenue.ok ? revenue.data.growthPercentage : null;
   const common = { onOpen, retry, busy };
+  const ps = previous?.stats.ok ? previous.stats.data : null;
+  const prevRate = ps && ps.registeredThisMonth > 0 ? (ps.subscribedThisMonth / ps.registeredThisMonth) * 100 : null;
 
   return (
     <div className="kpis">
-      <Kpi {...common} metric="revenue" label="Revenue this month" icon="rupee" tone="teal" ok={revenue.ok} value={revenue.ok ? inr(revenue.data.currentMonthRevenue) : ''}
-           foot={g === null ? <><span className="delta flat">No comparison</span><span className="muted">last month had no revenue</span></> : (
-             <><span className={'delta ' + (g >= 0 ? 'up' : 'dn')}><Icon name={g >= 0 ? 'trendUp' : 'trendDown'} size={13} />{Math.abs(g).toLocaleString('en-IN', { maximumFractionDigits: 1 })}%</span><span className="muted">vs last month</span></>
+      <Kpi {...common} metric="revenue" label={`Revenue · ${periodLabel}`} icon="rupee" tone="teal" ok={revenue.ok} value={revenue.ok ? inr(revenue.data.currentMonthRevenue) : ''}
+           foot={g === null ? <><span className="delta flat">No comparison</span><span className="muted">the previous period had no revenue</span></> : (
+             <><span className={'delta ' + (g >= 0 ? 'up' : 'dn')}><Icon name={g >= 0 ? 'trendUp' : 'trendDown'} size={13} />{Math.abs(g).toLocaleString('en-IN', { maximumFractionDigits: 1 })}%</span><span className="muted">vs previous period</span></>
            )} />
       <Kpi {...common} metric="registered" label="Registered students" icon="users" tone="blue" ok={stats.ok} value={num(s?.totalUsers)}
-           foot={<span className="muted">{num(s?.registeredThisMonth)} joined this month</span>} />
+           foot={<><span className="muted">{num(s?.registeredThisMonth)} joined {phrase}</span>{previous ? <Delta cur={s?.registeredThisMonth ?? 0} prev={ps?.registeredThisMonth} /> : null}</>} />
       <Kpi {...common} metric="subscribed" label="Subscribed students" icon="sparkles" tone="violet" ok={stats.ok} value={num(s?.totalStudents)}
-           foot={<><span className="muted">{num(s?.subscribedThisMonth)} this month</span><Sparkline values={daily} label={`New subscriptions per day, last ${daily.length} days`} /></>} />
-      <Kpi {...common} metric="conversion" label="Conversion this month" icon="percent" tone="amber" ok={stats.ok} value={conv === null ? '—' : `${conv.toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`}
-           foot={<span className="muted">{num(s?.subscribedThisMonth)} of {num(s?.registeredThisMonth)} new students</span>} />
+           foot={<><span className="muted">{num(s?.subscribedThisMonth)} bought a plan {phrase}</span>{previous ? <Delta cur={s?.subscribedThisMonth ?? 0} prev={ps?.subscribedThisMonth} /> : null}<Sparkline values={daily} label={`New subscriptions per day, last ${daily.length} days`} /></>} />
+      <Kpi {...common} metric="conversion" label={`Conversion · ${periodLabel}`} icon="percent" tone="amber" ok={stats.ok} value={conv === null ? '—' : `${conv.toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`}
+           foot={<><span className="muted">{num(s?.subscribedThisMonth)} of {num(s?.registeredThisMonth)} new students</span>{previous && conv !== null && prevRate !== null ? <Delta cur={conv} prev={prevRate} /> : null}</>} />
     </div>
   );
 }

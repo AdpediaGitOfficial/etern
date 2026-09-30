@@ -4,13 +4,17 @@ export interface Stats {
   registeredThisMonth: number;
   subscribedThisMonth: number;
   freeUsersThisMonth: number;
+  range?: { from: string; to: string };
 }
 export interface Revenue {
   currentMonthRevenue: number;
   growthPercentage: number | null;
+  previousRevenue?: number;
 }
 export interface SubscriptionPoint {
   subscription_date: string;
+  /** YYYY-MM-DD. Sent by newer backends. */
+  date?: string;
   total_subscriptions: number | string;
 }
 export interface VideoRow {

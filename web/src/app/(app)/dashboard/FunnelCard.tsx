@@ -4,22 +4,22 @@ import Link from 'next/link';
 import type { Result } from '@/lib/backend';
 import Icon from '@/components/icons';
 import { PanelError } from '@/components/ui';
-import { monthRange, usersLink } from '@/lib/dates';
+import { usersLink } from '@/lib/dates';
 import { num } from '@/lib/format';
 import type { Stats } from '@/lib/types';
 
-export default function FunnelCard({ stats, retry, busy }: { stats: Result<Stats>; retry: () => void; busy: boolean }) {
+export default function FunnelCard({ stats, range, phrase, retry, busy }: { stats: Result<Stats>; range: { from: string; to: string }; phrase: string; retry: () => void; busy: boolean }) {
   const s = stats.ok ? stats.data : null;
-  const { from, to } = monthRange();
+  const { from, to } = range;
   const pct = (v: number) => (s && s.registeredThisMonth > 0 ? Math.min(100, (v / s.registeredThisMonth) * 100) : 0);
   const rows = s ? [
     { l: 'Registered', v: s.registeredThisMonth, p: s.registeredThisMonth ? 100 : 0, cls: 'blue', href: usersLink({ from, to }) },
-    { l: 'Subscribed', v: s.subscribedThisMonth, p: pct(s.subscribedThisMonth), cls: '', href: usersLink({ from, to, subscription: 'true' }) },
-    { l: 'Not subscribed', v: s.freeUsersThisMonth, p: pct(s.freeUsersThisMonth), cls: 'amber', href: usersLink({ from, to, subscription: 'false' }) },
+    { l: 'Bought a plan', v: s.subscribedThisMonth, p: pct(s.subscribedThisMonth), cls: '', href: usersLink({ subscribedFrom: from, subscribedTo: to }) },
+    { l: 'Still free', v: s.freeUsersThisMonth, p: pct(s.freeUsersThisMonth), cls: 'amber', href: usersLink({ from, to, segment: 'free' }) },
   ] : [];
   return (
     <div className="card">
-      <h2>New students this month</h2>
+      <h2>New students {phrase}</h2>
       <p className="muted">Select a row to open those students</p>
       {!s ? <PanelError onRetry={retry} busy={busy} /> : (
         <div className="fn">

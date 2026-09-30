@@ -47,13 +47,16 @@ Same layout as packages: a compact table with server-side search, status tabs (a
   without an image, each linking to the screen that fixes it. The "Upcoming Expiry" menu item shows the live count.
 - **Sparkline, summary export.** The subscribed card shows the daily trend; *Export summary* downloads every loaded panel as one CSV.
   Exports neutralise spreadsheet formulas (CSV injection), because names in the data are editable by staff.
-- **Not built yet: date range and compare-with-previous-period.** The current API only returns "this month" and "last 10 days", so these
-  need new backend parameters first (see below).
+- **Period picker and compare.** This month, 7, 30 or 90 days, or year to date. The figures, revenue and the chart follow the period, and
+  *Compare* shows the change against the period of the same length before it. Drill-downs open the Users list for that same period.
+  Needs the backend from the same release (`from` and `to` on `user/userCount`, `subscription/revenueDetails`,
+  `student/dashboard/subscriptions`). Older backends ignore them and always answer for the current month.
 
-### Backend work needed for date range and compare
-`student/dashboard/subscriptions` is fixed to the last 10 days, and `user/userCount` and `subscription/revenueDetails` are fixed to the
-current month. To add a 7D / 30D / 90D / YTD picker, each of the three endpoints needs an optional `from` and `to`, defaulting to today's
-behaviour so the mobile app and Angular keep working. That requires a MongoDB integration test, which is why it is separate.
+### What the backend returns for the dashboard
+- `from` and `to` are optional, written `YYYY-MM-DD`, at most 366 days apart, read as UTC. Without them the answers are the same as before.
+- "Bought a plan" counts students with a subscription record created in the period (renewals included). "Still free" is students who joined in
+  the period and have no running plan now. Revenue is money marked paid, by payment date.
+- `student/allAdmin?subscribedFrom=&subscribedTo=` lists those students. An empty list is a normal `200`.
 
 ## How it works
 - The browser talks only to this Next.js server. Next calls the Express API server-to-server, so the API needs

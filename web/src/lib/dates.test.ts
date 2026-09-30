@@ -19,3 +19,33 @@ describe('dates', () => {
     expect(usersLink({ q: 'a b&c' })).toBe('/users?q=a+b%26c');
   });
 });
+
+import { PRESETS, presetRange, previousPeriod, validRange } from './dates';
+
+describe('period presets', () => {
+  const now = new Date(2026, 8, 30, 15);
+  it('each preset ends today', () => {
+    expect(presetRange('month', now)).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    expect(presetRange('7d', now)).toEqual({ from: '2026-09-24', to: '2026-09-30' });
+    expect(presetRange('30d', now)).toEqual({ from: '2026-09-01', to: '2026-09-30' });
+    expect(presetRange('90d', now)).toEqual({ from: '2026-07-03', to: '2026-09-30' });
+    expect(presetRange('ytd', now)).toEqual({ from: '2026-01-01', to: '2026-09-30' });
+    expect(PRESETS.map(p => p.key)).toEqual(['month', '7d', '30d', '90d', 'ytd']);
+  });
+  it('the previous period has the same length and ends the day before', () => {
+    expect(previousPeriod({ from: '2026-09-24', to: '2026-09-30' })).toEqual({ from: '2026-09-17', to: '2026-09-23' });
+    expect(previousPeriod({ from: '2026-09-01', to: '2026-09-30' })).toEqual({ from: '2026-08-02', to: '2026-08-31' });
+    expect(previousPeriod({ from: '2026-03-01', to: '2026-03-03' })).toEqual({ from: '2026-02-26', to: '2026-02-28' });
+  });
+  it('validRange needs two real days in order, at most 366 apart', () => {
+    expect(validRange('2026-09-01', '2026-09-30')).toBe(true);
+    expect(validRange('2026-09-30', '2026-09-01')).toBe(false);
+    expect(validRange('2024-01-01', '2026-01-01')).toBe(false);
+    expect(validRange(null, '2026-09-01')).toBe(false);
+    expect(validRange('2026-09-01', '2026-09-01<x>')).toBe(false);
+  });
+  it('usersLink carries the plan-bought range', () => {
+    expect(usersLink({ subscribedFrom: '2026-09-01', subscribedTo: '2026-09-30' })).toBe('/users?subscribedFrom=2026-09-01&subscribedTo=2026-09-30');
+    expect(usersLink({ segment: 'free', from: '2026-09-01', to: '2026-09-30' })).toBe('/users?segment=free&from=2026-09-01&to=2026-09-30');
+  });
+});

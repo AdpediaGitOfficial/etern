@@ -9,7 +9,7 @@ import { fmtDate } from '@/lib/format';
 import type { Paged, SegmentCounts, Student } from '@/lib/types';
 
 type Filter = 'all' | 'upcoming' | 'expired';
-export interface InitialFilters { q?: string; segment?: Segment; status?: 'true' | 'false'; from?: string; to?: string }
+export interface InitialFilters { q?: string; segment?: Segment; status?: 'true' | 'false'; from?: string; to?: string; subscribedFrom?: string; subscribedTo?: string }
 const TABS: { key: Segment; label: string; count: keyof SegmentCounts }[] = [
   { key: '', label: 'All', count: 'all' }, { key: 'active', label: 'Subscribed', count: 'active' }, { key: 'expiring', label: 'Expiring in 7 days', count: 'expiring' },
   { key: 'lapsed', label: 'Free (plan ended)', count: 'lapsed' }, { key: 'never', label: 'Never subscribed', count: 'never' },
@@ -33,6 +33,7 @@ export default function UsersList({ filter, initial, initialFilters = {}, initia
   const [status, setStatus] = useState(initialFilters.status ?? 'All');
   const [from, setFrom] = useState(initialFilters.from ?? '');
   const [to, setTo] = useState(initialFilters.to ?? '');
+  const [bought, setBought] = useState(initialFilters.subscribedFrom && initialFilters.subscribedTo ? { from: initialFilters.subscribedFrom, to: initialFilters.subscribedTo } : null);
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<Student[]>(initial?.data ?? []);
   const [total, setTotal] = useState(initial?.totalCount ?? 0);
@@ -51,8 +52,9 @@ export default function UsersList({ filter, initial, initialFilters = {}, initia
     if (seg) p.set('segment', seg);
     if (status !== 'All') p.set('isActive', status);
     if (from && to) { p.set('startDate', from); p.set('endDate', to); }
+    if (bought) { p.set('subscribedFrom', bought.from); p.set('subscribedTo', bought.to); }
     return p.toString();
-  }, [page, q, seg, status, from, to]);
+  }, [page, q, seg, status, from, to, bought]);
 
   const loadCounts = useCallback(async () => {
     const r = await api<{ result?: SegmentCounts }>('student/segments');
@@ -91,7 +93,7 @@ export default function UsersList({ filter, initial, initialFilters = {}, initia
   }, [load, q]);
 
   const changeFilter = (fn: () => void) => { fn(); setPage(1); };
-  const filtered = Boolean(q.trim()) || status !== 'All' || Boolean(from && to);
+  const filtered = Boolean(q.trim()) || status !== 'All' || Boolean(from && to) || Boolean(bought);
 
   // Keep the address in step with the filters, so a filtered list can be bookmarked or shared.
   useEffect(() => {
@@ -100,11 +102,12 @@ export default function UsersList({ filter, initial, initialFilters = {}, initia
     if (seg && filter === 'all') p.set('segment', seg);
     if (status !== 'All') p.set('status', status);
     if (from && to) { p.set('from', from); p.set('to', to); }
+    if (bought) { p.set('subscribedFrom', bought.from); p.set('subscribedTo', bought.to); }
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [q, seg, filter, status, from, to]);
+  }, [q, seg, filter, status, from, to, bought]);
 
-  function clearFilters() { setQ(''); setStatus('All'); setFrom(''); setTo(''); setPage(1); }
+  function clearFilters() { setQ(''); setStatus('All'); setFrom(''); setTo(''); setBought(null); setPage(1); }
 
   async function runConfirm() {
     if (!confirm) return;
@@ -146,6 +149,7 @@ export default function UsersList({ filter, initial, initialFilters = {}, initia
         </div>
       ) : null}
       {seg && NOTES[seg] ? <div className="segnote">{NOTES[seg]}</div> : null}
+      {bought ? <div className="segnote">Showing students who bought or renewed a plan from {bought.from} to {bought.to}. <button type="button" className="link" onClick={() => changeFilter(() => setBought(null))}>Show everyone</button></div> : null}
       <div className="filters">
         <label>Search
           <input type="search" placeholder="Name or mobile number" value={q} onChange={e => changeFilter(() => setQ(e.target.value))} />

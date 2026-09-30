@@ -428,3 +428,9 @@ tbody.dim { opacity: .5; transition: opacity .15s; }
 @media (max-width: 560px) { .cat { grid-template-columns: minmax(0, 1fr); gap: 4px; } .catend { justify-content: flex-start; } }
 .card.flush > .filters { padding: 14px 20px; }
 .tbl.users .row-actions { flex-wrap: nowrap; justify-content: flex-end; }
+
+/* Dashboard period */
+.period { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.period .tabs { background: var(--chip); padding: 3px; border-radius: 10px; gap: 2px; }
+.period .tabs button[aria-pressed="true"] { background: var(--card); color: var(--brand); box-shadow: var(--shadow-1); }
+.period .tabs button:disabled { opacity: .6; cursor: default; }

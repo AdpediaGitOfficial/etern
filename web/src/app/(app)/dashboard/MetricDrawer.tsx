@@ -73,7 +73,7 @@ function paymentRow(base: string) {
 
 const Stat = ({ label, value }: { label: string; value: string }) => <div className="stat"><b>{value}</b><span>{label}</span></div>;
 
-function RevenueBody({ data }: { data: DashboardData }) {
+function RevenueBody({ data, phrase }: { data: DashboardData; phrase: string }) {
   const [online, retryOnline] = usePreview<Payment>('subscription/offlinepayments?mode=online&page=1&limit=5');
   const [offline, retryOffline] = usePreview<Payment>('subscription/offlinepayments?mode=offline&page=1&limit=5');
   const g = data.revenue.ok ? data.revenue.data.growthPercentage : null;
@@ -81,51 +81,51 @@ function RevenueBody({ data }: { data: DashboardData }) {
     <>
       <div className="hero">
         <span className="big">{data.revenue.ok ? inr(data.revenue.data.currentMonthRevenue) : '—'}</span>
-        {g === null ? <span className="delta flat">No comparison</span> : <span className={'delta ' + (g >= 0 ? 'up' : 'dn')}><Icon name={g >= 0 ? 'trendUp' : 'trendDown'} size={14} /> {Math.abs(g).toLocaleString('en-IN', { maximumFractionDigits: 1 })}% vs last month</span>}
+        {g === null ? <span className="delta flat">No comparison</span> : <span className={'delta ' + (g >= 0 ? 'up' : 'dn')}><Icon name={g >= 0 ? 'trendUp' : 'trendDown'} size={14} /> {Math.abs(g).toLocaleString('en-IN', { maximumFractionDigits: 1 })}% vs previous period</span>}
       </div>
-      <p className="muted">Revenue collected this month across online and offline payments.{g === null ? ' Last month had no revenue, so there is nothing to compare with.' : ''}</p>
+      <p className="muted">Revenue collected {phrase} across online and offline payments.{g === null ? ' The previous period had no revenue, so there is nothing to compare with.' : ''}</p>
       <Preview title="Latest online payments" load={online} retry={retryOnline} empty="No online payments yet." render={paymentRow('/online-payments')} allHref="/online-payments" allLabel="View all online payments" />
       <Preview title="Latest offline payments" load={offline} retry={retryOffline} empty="No offline payments yet." render={paymentRow('/offline-payments')} allHref="/offline-payments" allLabel="View all offline payments" />
     </>
   );
 }
 
-function StudentsBody({ metric, data }: { metric: 'registered' | 'subscribed'; data: DashboardData }) {
-  const { from, to } = monthRange();
+function StudentsBody({ metric, data, phrase }: { metric: 'registered' | 'subscribed'; data: DashboardData; phrase: string }) {
+  const { from, to } = data.range ?? monthRange();
   const registered = metric === 'registered';
-  const path = registered ? `student/allAdmin?page=1&limit=6&startDate=${from}&endDate=${to}` : 'student/allAdmin?page=1&limit=6&subscribed=true';
+  const path = registered ? `student/allAdmin?page=1&limit=6&startDate=${from}&endDate=${to}` : `student/allAdmin?page=1&limit=6&subscribedFrom=${from}&subscribedTo=${to}`;
   const [list, retry] = usePreview<Student>(path);
   const s = data.stats.ok ? data.stats.data : null;
   return (
     <>
       <div className="hero"><span className="big">{num(registered ? s?.totalUsers : s?.totalStudents)}</span><span className="muted">{registered ? 'registered students' : 'subscribed students'}</span></div>
       <div className="stat-grid">
-        <Stat label="Joined this month" value={num(s?.registeredThisMonth)} />
-        <Stat label="Subscribed this month" value={num(s?.subscribedThisMonth)} />
+        <Stat label={`Joined ${phrase}`} value={num(s?.registeredThisMonth)} />
+        <Stat label={`Bought a plan ${phrase}`} value={num(s?.subscribedThisMonth)} />
         <Stat label="Expiring in 7 days" value={data.expiring.ok ? num(data.expiring.data) : '—'} />
         <Stat label="Expired" value={data.expired.ok ? num(data.expired.data) : '—'} />
       </div>
-      <Preview title={registered ? 'Joined this month' : 'Subscribed students'} load={list} retry={retry} empty="No students match yet." render={studentRow}
-               allHref={registered ? usersLink({ from, to }) : usersLink({ subscription: 'true' })} allLabel="Open in Users" />
+      <Preview title={registered ? `Joined ${phrase}` : `Bought a plan ${phrase}`} load={list} retry={retry} empty="No students match yet." render={studentRow}
+               allHref={registered ? usersLink({ from, to }) : usersLink({ subscribedFrom: from, subscribedTo: to })} allLabel="Open in Users" />
     </>
   );
 }
 
-function ConversionBody({ data }: { data: DashboardData }) {
-  const { from, to } = monthRange();
+function ConversionBody({ data, phrase }: { data: DashboardData; phrase: string }) {
+  const { from, to } = data.range ?? monthRange();
   const s = data.stats.ok ? data.stats.data : null;
   const rate = s && s.registeredThisMonth > 0 ? (s.subscribedThisMonth / s.registeredThisMonth) * 100 : null;
   const rows = [
     { label: 'Registered', value: s?.registeredThisMonth ?? 0, href: usersLink({ from, to }), cls: 'blue' },
-    { label: 'Subscribed', value: s?.subscribedThisMonth ?? 0, href: usersLink({ from, to, subscription: 'true' }), cls: '' },
-    { label: 'Not subscribed', value: s?.freeUsersThisMonth ?? 0, href: usersLink({ from, to, subscription: 'false' }), cls: 'amber' },
+    { label: 'Bought a plan', value: s?.subscribedThisMonth ?? 0, href: usersLink({ subscribedFrom: from, subscribedTo: to }), cls: '' },
+    { label: 'Still free', value: s?.freeUsersThisMonth ?? 0, href: usersLink({ from, to, segment: 'free' }), cls: 'amber' },
   ];
   return (
     <>
       <div className="hero"><span className="big">{rate === null ? '—' : `${rate.toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`}</span><span className="muted">of new students subscribed</span></div>
-      <p className="muted">{s ? `${num(s.subscribedThisMonth)} of the ${num(s.registeredThisMonth)} students who joined this month have a paid subscription.` : 'Numbers are unavailable right now.'}</p>
+      <p className="muted">{s ? `${num(s.subscribedThisMonth)} of the ${num(s.registeredThisMonth)} students who joined ${phrase} have a paid plan now.` : 'Numbers are unavailable right now.'}</p>
       <section>
-        <div className="sec-title">Where this month’s students are</div>
+        <div className="sec-title">Where the new students are</div>
         <ul className="rows">
           {rows.map(r => {
             const pct = s && s.registeredThisMonth > 0 ? Math.min(100, (r.value / s.registeredThisMonth) * 100) : 0;
@@ -146,29 +146,29 @@ function ConversionBody({ data }: { data: DashboardData }) {
 }
 
 const TITLES: Record<Metric, { title: string; subtitle: string; icon: 'rupee' | 'users' | 'sparkles' | 'percent' }> = {
-  revenue: { title: 'Revenue', subtitle: 'This month', icon: 'rupee' },
+  revenue: { title: 'Revenue', subtitle: 'Money received', icon: 'rupee' },
   registered: { title: 'Registered students', subtitle: 'Everyone with an account', icon: 'users' },
   subscribed: { title: 'Subscribed students', subtitle: 'Students with a paid plan', icon: 'sparkles' },
-  conversion: { title: 'Conversion', subtitle: 'This month’s registrations that subscribed', icon: 'percent' },
+  conversion: { title: 'Conversion', subtitle: 'New students who bought a plan', icon: 'percent' },
 };
 
 /** Details panel opened from a KPI card: the number in context, a preview of the records behind it, and links into the full lists. */
-export default function MetricDrawer({ metric, data, onClose }: { metric: Metric | null; data: DashboardData; onClose: () => void }) {
+export default function MetricDrawer({ metric, data, phrase, label, onClose }: { metric: Metric | null; data: DashboardData; phrase: string; label: string; onClose: () => void }) {
   const t = metric ? TITLES[metric] : null;
-  const { from, to } = monthRange();
+  const { from, to } = data.range ?? monthRange();
   const footer = useCallback((): ReactNode => {
     if (metric === 'revenue') return <><Link className="btn primary" href="/online-payments">Online payments</Link><Link className="btn" href="/offline-payments">Offline payments</Link></>;
-    if (metric === 'registered') return <><Link className="btn primary" href="/users">All users</Link><Link className="btn" href={usersLink({ from, to })}>Joined this month</Link></>;
-    if (metric === 'subscribed') return <><Link className="btn primary" href={usersLink({ subscription: 'true' })}>Subscribed users</Link><Link className="btn" href="/users/upcoming">Upcoming expiry</Link></>;
-    return <><Link className="btn primary" href={usersLink({ from, to, subscription: 'false' })}>Follow up on free users</Link></>;
-  }, [metric, from, to]);
+    if (metric === 'registered') return <><Link className="btn primary" href="/users">All users</Link><Link className="btn" href={usersLink({ from, to })}>Joined {phrase}</Link></>;
+    if (metric === 'subscribed') return <><Link className="btn primary" href={usersLink({ segment: 'active' })}>Subscribed users</Link><Link className="btn" href="/users/upcoming">Upcoming expiry</Link></>;
+    return <><Link className="btn primary" href={usersLink({ from, to, segment: 'free' })}>Follow up on free users</Link></>;
+  }, [metric, from, to, phrase]);
 
   return (
-    <SidePanel open={Boolean(metric)} title={t?.title ?? ''} subtitle={t?.subtitle} onClose={onClose} footer={metric ? footer() : null}
+    <SidePanel open={Boolean(metric)} title={t?.title ?? ''} subtitle={metric === 'revenue' || metric === 'conversion' ? `${t?.subtitle ?? ''} · ${label}` : t?.subtitle} onClose={onClose} footer={metric ? footer() : null}
                icon={t ? <span className="kpi-ic teal"><Icon name={t.icon} /></span> : null}>
-      {metric === 'revenue' ? <RevenueBody data={data} /> : null}
-      {metric === 'registered' || metric === 'subscribed' ? <StudentsBody metric={metric} data={data} /> : null}
-      {metric === 'conversion' ? <ConversionBody data={data} /> : null}
+      {metric === 'revenue' ? <RevenueBody data={data} phrase={phrase} /> : null}
+      {metric === 'registered' || metric === 'subscribed' ? <StudentsBody metric={metric} data={data} phrase={phrase} /> : null}
+      {metric === 'conversion' ? <ConversionBody data={data} phrase={phrase} /> : null}
     </SidePanel>
   );
 }

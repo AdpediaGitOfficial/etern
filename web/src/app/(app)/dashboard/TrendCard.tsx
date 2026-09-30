@@ -10,7 +10,7 @@ const W = 720, H = 280, PAD = { left: 44, right: 14, top: 26, bottom: 30 };
 
 export default function TrendCard({ chart, retry, busy }: { chart: Result<SubscriptionPoint[]>; retry: () => void; busy: boolean }) {
   const points = useMemo(
-    () => (chart.ok ? (chart.data || []).map(p => ({ label: p.subscription_date, value: Number(p.total_subscriptions) || 0 })) : []),
+    () => (chart.ok ? (chart.data || []).map(p => ({ label: p.subscription_date, full: p.date ?? p.subscription_date, value: Number(p.total_subscriptions) || 0 })) : []),
     [chart],
   );
   const [table, setTable] = useState(false);
@@ -41,8 +41,8 @@ export default function TrendCard({ chart, retry, busy }: { chart: Result<Subscr
     <div className="card">
       <div className="ch">
         <div>
-          <h2>Students subscribed</h2>
-          {chart.ok && points.length ? <p className="muted">Last {points.length} days · {num(total)} total · hover for daily values</p> : null}
+          <h2>Plans bought per day</h2>
+          {chart.ok && points.length ? <p className="muted">{points.length} days · {num(total)} plans bought · hover for daily values</p> : null}
         </div>
         {chart.ok && points.length ? (
           <label className="tg"><input type="checkbox" checked={table} onChange={e => setTable(e.target.checked)} /> Table view</label>
@@ -54,12 +54,12 @@ export default function TrendCard({ chart, retry, busy }: { chart: Result<Subscr
         <div className="tw">
           <table className="tbl narrow">
             <thead><tr><th>Date</th><th className="n">Subscriptions</th></tr></thead>
-            <tbody>{points.map(p => <tr key={p.label}><td>{p.label}</td><td className="n">{num(p.value)}</td></tr>)}</tbody>
+            <tbody>{points.map(p => <tr key={p.full}><td>{p.full}</td><td className="n">{num(p.value)}</td></tr>)}</tbody>
           </table>
         </div>
       ) : (
         <div className="plot">
-          <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Students subscribed per day for the last ${points.length} days, ${total} in total`}
+          <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Plans bought per day over ${points.length} days, ${total} in total`}
                onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
             {[0, 1, 2, 3, 4].map(i => { const t = yStep * i; return (
               <g key={i}><line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} className="grid-line" /><text x={PAD.left - 8} y={y(t) + 4} textAnchor="end">{t}</text></g>
@@ -74,7 +74,7 @@ export default function TrendCard({ chart, retry, busy }: { chart: Result<Subscr
           </svg>
           {hover !== null ? (
             <div className="tip" style={{ left: `${Math.min(88, Math.max(12, (x(hover) / W) * 100))}%`, top: `${(y(points[hover].value) / H) * 100}%` }}>
-              <strong>{points[hover].label}</strong><span>{num(points[hover].value)} subscribed</span>
+              <strong>{points[hover].full}</strong><span>{num(points[hover].value)} bought a plan</span>
             </div>
           ) : null}
         </div>

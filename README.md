@@ -14,3 +14,9 @@ The rules live in `subscription/accessRules.ts` (pure functions, tested from `we
   - Turn it on only when the mobile app shows the lock. Until then behaviour is unchanged.
 - Admin API (additive): `student/allAdmin?segment=active|expiring|lapsed|never|free`, `student/segments` (counts), `student/:id/journey`.
 - Watch time is not reported yet because the unit of `watchedDuration` is not documented.
+
+## Dashboard periods
+
+`user/userCount`, `subscription/revenueDetails` and `student/dashboard/subscriptions` take optional `from` and `to` (`YYYY-MM-DD`, at most 366 days,
+UTC). Without them they answer for the current month (chart: last 10 days) as before. Rules are in `common/dateRange.ts`. Subscription counts and the
+chart come from the subscription records, so renewals count. `PUT package/:id` replaces plans only when `packageCosts` is sent.

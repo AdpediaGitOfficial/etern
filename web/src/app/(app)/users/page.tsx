@@ -1,5 +1,5 @@
 import { Breadcrumb, PageHead } from '@/components/ui';
-import { isIsoDay } from '@/lib/dates';
+import { isIsoDay, validRange } from '@/lib/dates';
 import { authedGet } from '@/lib/server';
 import type { Paged, SegmentCounts, Student } from '@/lib/types';
 import { SEGMENTS, type Segment } from '@/lib/access';
@@ -19,7 +19,11 @@ function filtersFrom(sp: Record<string, string | string[] | undefined>): Initial
   const legacy = sp.subscription === 'true' ? 'active' : sp.subscription === 'false' ? 'free' : undefined;
   const asked = one(sp.segment) ?? legacy;
   const segment = SEGMENTS.includes(asked as Segment) ? (asked as Segment) : undefined;
-  return { q: one(sp.q)?.slice(0, 80) || undefined, segment, status: triState(sp.status), ...dates };
+  // Students who bought or renewed a plan in a period (dashboard drill-down). Needs a valid pair.
+  const bf = one(sp.subscribedFrom);
+  const bt = one(sp.subscribedTo);
+  const bought = validRange(bf, bt) ? { subscribedFrom: bf, subscribedTo: bt } : {};
+  return { q: one(sp.q)?.slice(0, 80) || undefined, segment, status: triState(sp.status), ...dates, ...bought };
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -29,6 +33,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   if (f.segment) q.set('segment', f.segment);
   if (f.status) q.set('isActive', f.status);
   if (f.from && f.to) { q.set('startDate', f.from); q.set('endDate', f.to); }
+  if (f.subscribedFrom && f.subscribedTo) { q.set('subscribedFrom', f.subscribedFrom); q.set('subscribedTo', f.subscribedTo); }
   const [r, c] = await Promise.all([authedGet<Paged<Student>>(`student/allAdmin?${q}`), authedGet<SegmentCounts>('student/segments')]);
   return (
     <div className="dash">
