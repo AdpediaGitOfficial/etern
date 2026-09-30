@@ -29,3 +29,25 @@ describe('endsWhen', () => {
     expect(endsWhen(null, now)).toBe('');
   });
 });
+
+import { conversion } from './access';
+
+describe('conversion', () => {
+  const stats = (over = {}) => ({ registeredThisMonth: 10, freeUsersThisMonth: 6, newStudentsSubscribed: 4, ...over });
+  it('compares the students who joined in the period with themselves', () => {
+    expect(conversion(stats())).toEqual({ registered: 10, withPlan: 4, stillFree: 6, percent: 40 });
+  });
+  it('never passes 100%, even when renewals outnumber new students', () => {
+    // 50 renewals, 2 new students, 1 of whom bought: the old sum would have read 2500%.
+    const c = conversion(stats({ registeredThisMonth: 2, newStudentsSubscribed: 1, freeUsersThisMonth: 1 }))!;
+    expect(c.percent).toBe(50);
+    expect(c.withPlan + c.stillFree).toBe(c.registered);
+  });
+  it('falls back for an older backend that omits the field', () => {
+    expect(conversion({ registeredThisMonth: 10, freeUsersThisMonth: 6 })).toEqual({ registered: 10, withPlan: 4, stillFree: 6, percent: 40 });
+  });
+  it('no registrations means no rate', () => {
+    expect(conversion(stats({ registeredThisMonth: 0, freeUsersThisMonth: 0, newStudentsSubscribed: 0 }))!.percent).toBeNull();
+    expect(conversion(null)).toBeNull();
+  });
+});

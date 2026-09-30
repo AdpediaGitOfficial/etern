@@ -292,7 +292,7 @@ export const getUserCountUseCase = async (range?: DateRange | null): Promise<IUs
   const period = range ?? currentMonth();
   const totalUsers = await getStudentCount();
   const totalStudents = await getSubscribedStudentCount();
-  const { registeredThisMonth, subscribedThisMonth, freeUsersThisMonth } =
+  const { registeredThisMonth, subscribedThisMonth, freeUsersThisMonth, newStudentsSubscribed } =
     await getPeriodActivities(period);
   return {
     totalUsers,
@@ -300,6 +300,7 @@ export const getUserCountUseCase = async (range?: DateRange | null): Promise<IUs
     registeredThisMonth,
     subscribedThisMonth,
     freeUsersThisMonth,
+    newStudentsSubscribed,
     range: { from: dayKey(period.from), to: dayKey(period.to) },
   };
 };

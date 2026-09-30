@@ -60,7 +60,9 @@ export default function DashboardView({ initial, assetBase }: Props) {
     if (stats.ok) {
       const t = stats.data;
       rows.push(['Registered students', t.totalUsers], ['Subscribed students', t.totalStudents], ['New registrations', t.registeredThisMonth],
-        ['Students who bought a plan', t.subscribedThisMonth], ['New students still on the free version', t.freeUsersThisMonth]);
+        ['Students who bought or renewed a plan', t.subscribedThisMonth],
+        ['New students with a plan now', t.newStudentsSubscribed ?? (t.registeredThisMonth - t.freeUsersThisMonth)],
+        ['New students still on the free version', t.freeUsersThisMonth]);
     }
     if (expiring.ok) rows.push(['Subscriptions expiring within 7 days', expiring.data]);
     if (expired.ok) rows.push(['Subscriptions expired', expired.data]);

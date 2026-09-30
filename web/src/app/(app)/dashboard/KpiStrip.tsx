@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { Result } from '@/lib/backend';
 import Icon, { type IconName } from '@/components/icons';
 import { PanelError } from '@/components/ui';
+import { conversion } from '@/lib/access';
 import { inr, num } from '@/lib/format';
 import type { Revenue, Stats, SubscriptionPoint } from '@/lib/types';
 import type { Metric } from './MetricDrawer';
@@ -48,11 +49,12 @@ function Kpi({ metric, label, icon, tone, ok, value, foot, onOpen, retry, busy }
 export default function KpiStrip({ stats, revenue, chart, phrase, label: periodLabel, previous, onOpen, retry, busy }: Props) {
   const s = stats.ok ? stats.data : null;
   const daily = chart.ok ? (chart.data ?? []).map(p => Number(p.total_subscriptions) || 0) : [];
-  const conv = s && s.registeredThisMonth > 0 ? (s.subscribedThisMonth / s.registeredThisMonth) * 100 : null;
+  const c = conversion(s);
+  const conv = c?.percent ?? null;
   const g = revenue.ok ? revenue.data.growthPercentage : null;
   const common = { onOpen, retry, busy };
   const ps = previous?.stats.ok ? previous.stats.data : null;
-  const prevRate = ps && ps.registeredThisMonth > 0 ? (ps.subscribedThisMonth / ps.registeredThisMonth) * 100 : null;
+  const prevRate = conversion(ps)?.percent ?? null;
 
   return (
     <div className="kpis">
@@ -65,7 +67,7 @@ export default function KpiStrip({ stats, revenue, chart, phrase, label: periodL
       <Kpi {...common} metric="subscribed" label="Subscribed students" icon="sparkles" tone="violet" ok={stats.ok} value={num(s?.totalStudents)}
            foot={<><span className="muted">{num(s?.subscribedThisMonth)} bought a plan {phrase}</span>{previous ? <Delta cur={s?.subscribedThisMonth ?? 0} prev={ps?.subscribedThisMonth} /> : null}<Sparkline values={daily} label={`New subscriptions per day, last ${daily.length} days`} /></>} />
       <Kpi {...common} metric="conversion" label={`Conversion · ${periodLabel}`} icon="percent" tone="amber" ok={stats.ok} value={conv === null ? '—' : `${conv.toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`}
-           foot={<><span className="muted">{num(s?.subscribedThisMonth)} of {num(s?.registeredThisMonth)} new students</span>{previous && conv !== null && prevRate !== null ? <Delta cur={conv} prev={prevRate} /> : null}</>} />
+           foot={<><span className="muted">{num(c?.withPlan)} of {num(c?.registered)} new students have a plan</span>{previous && conv !== null && prevRate !== null ? <Delta cur={conv} prev={prevRate} /> : null}</>} />
     </div>
   );
 }

@@ -349,18 +349,23 @@ export const getStudentCount = async (): Promise<number> => {
 /** New students, students who bought a plan, and new students still on the free version, for a period. */
 export const getPeriodActivities = async (
   range: DateRange,
-): Promise<{ registeredThisMonth: number; subscribedThisMonth: number; freeUsersThisMonth: number }> => {
+): Promise<{
+  registeredThisMonth: number;
+  subscribedThisMonth: number;
+  freeUsersThisMonth: number;
+  newStudentsSubscribed: number;
+}> => {
   try {
+    const running = { subscribed: true, subscriptionEndDate: { $gt: new Date() } };
     const joined = { isDeleted: false, createdAt: { $gte: range.from, $lte: range.to } };
     const registeredThisMonth = await studentModel.countDocuments(joined);
-    // "Subscribed" counts students who bought or renewed a plan in the period, taken from the subscription records.
+    // Activity: everyone who bought or renewed a plan in the period, renewals included.
     const subscribedThisMonth = (await findBuyerIds(range)).length;
-    // "Free" is the students who joined in the period and have no running plan now.
-    const freeUsersThisMonth = await studentModel.countDocuments({
-      ...joined,
-      $nor: [{ subscribed: true, subscriptionEndDate: { $gt: new Date() } }],
-    });
-    return { registeredThisMonth, subscribedThisMonth, freeUsersThisMonth };
+    // Conversion: of the students who joined in the period, how many have a plan running now.
+    // This pair shares one population, so the two numbers always add up to the registrations.
+    const newStudentsSubscribed = await studentModel.countDocuments({ ...joined, ...running });
+    const freeUsersThisMonth = registeredThisMonth - newStudentsSubscribed;
+    return { registeredThisMonth, subscribedThisMonth, freeUsersThisMonth, newStudentsSubscribed };
   } catch (error) {
     throw new Error('Failed to fetch student counts');
   }

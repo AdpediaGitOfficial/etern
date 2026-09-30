@@ -32,3 +32,16 @@ export const isRunning = (s: AccessStatus): boolean => s === 'subscribed' || s =
 /** Groups of students in the admin list. '' means everyone. */
 export type Segment = '' | 'active' | 'expiring' | 'lapsed' | 'never' | 'free';
 export const SEGMENTS: Segment[] = ['active', 'expiring', 'lapsed', 'never', 'free'];
+
+/**
+ * Conversion compares one population with itself: of the students who joined in the period, how many have a plan now.
+ * Counting buyers instead would mix renewals from older students in and can pass 100%.
+ */
+export function conversion(s: { registeredThisMonth: number; newStudentsSubscribed?: number; freeUsersThisMonth: number } | null):
+  { registered: number; withPlan: number; stillFree: number; percent: number | null } | null {
+  if (!s) return null;
+  const registered = s.registeredThisMonth;
+  const withPlan = s.newStudentsSubscribed ?? Math.max(0, registered - s.freeUsersThisMonth);
+  const stillFree = Math.max(0, registered - withPlan);
+  return { registered, withPlan, stillFree, percent: registered > 0 ? (withPlan / registered) * 100 : null };
+}

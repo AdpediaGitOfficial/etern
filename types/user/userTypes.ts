@@ -90,8 +90,12 @@ export interface IUserCount {
   totalUsers: number;
   totalStudents: number;
   registeredThisMonth: number;
+  /** Students who bought or renewed a plan in the period (renewals included). */
   subscribedThisMonth: number;
+  /** Of the students who joined in the period: how many have no plan running now. */
   freeUsersThisMonth: number;
+  /** Of the students who joined in the period: how many have a plan running now. Use this for conversion. */
+  newStudentsSubscribed: number;
   /** The period the three "ThisMonth" numbers cover. The current month when no range is sent. */
   range: { from: string; to: string };
 }

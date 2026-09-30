@@ -4,6 +4,8 @@ export interface Stats {
   registeredThisMonth: number;
   subscribedThisMonth: number;
   freeUsersThisMonth: number;
+  /** Of the students who joined in the period, how many have a plan now. Older backends omit it. */
+  newStudentsSubscribed?: number;
   range?: { from: string; to: string };
 }
 export interface Revenue {

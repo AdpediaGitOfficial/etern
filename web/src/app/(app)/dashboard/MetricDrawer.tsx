@@ -7,6 +7,7 @@ import SidePanel from '@/components/SidePanel';
 import { Pill } from '@/components/ui';
 import { api } from '@/lib/api';
 import type { DashboardData } from '@/lib/dashboardData';
+import { conversion } from '@/lib/access';
 import { monthRange, usersLink } from '@/lib/dates';
 import { fmtDate, inr, num } from '@/lib/format';
 import type { Paged, Payment, Student } from '@/lib/types';
@@ -102,6 +103,7 @@ function StudentsBody({ metric, data, phrase }: { metric: 'registered' | 'subscr
       <div className="stat-grid">
         <Stat label={`Joined ${phrase}`} value={num(s?.registeredThisMonth)} />
         <Stat label={`Bought a plan ${phrase}`} value={num(s?.subscribedThisMonth)} />
+        <Stat label="New students with a plan" value={num(conversion(s)?.withPlan)} />
         <Stat label="Expiring in 7 days" value={data.expiring.ok ? num(data.expiring.data) : '—'} />
         <Stat label="Expired" value={data.expired.ok ? num(data.expired.data) : '—'} />
       </div>
@@ -114,21 +116,22 @@ function StudentsBody({ metric, data, phrase }: { metric: 'registered' | 'subscr
 function ConversionBody({ data, phrase }: { data: DashboardData; phrase: string }) {
   const { from, to } = data.range ?? monthRange();
   const s = data.stats.ok ? data.stats.data : null;
-  const rate = s && s.registeredThisMonth > 0 ? (s.subscribedThisMonth / s.registeredThisMonth) * 100 : null;
+  const c = conversion(s);
+  const rate = c?.percent ?? null;
   const rows = [
-    { label: 'Registered', value: s?.registeredThisMonth ?? 0, href: usersLink({ from, to }), cls: 'blue' },
-    { label: 'Bought a plan', value: s?.subscribedThisMonth ?? 0, href: usersLink({ subscribedFrom: from, subscribedTo: to }), cls: '' },
-    { label: 'Still free', value: s?.freeUsersThisMonth ?? 0, href: usersLink({ from, to, segment: 'free' }), cls: 'amber' },
+    { label: 'Registered', value: c?.registered ?? 0, href: usersLink({ from, to }), cls: 'blue' },
+    { label: 'Have a plan', value: c?.withPlan ?? 0, href: usersLink({ from, to, segment: 'active' }), cls: '' },
+    { label: 'Still free', value: c?.stillFree ?? 0, href: usersLink({ from, to, segment: 'free' }), cls: 'amber' },
   ];
   return (
     <>
       <div className="hero"><span className="big">{rate === null ? '—' : `${rate.toLocaleString('en-IN', { maximumFractionDigits: 1 })}%`}</span><span className="muted">of new students subscribed</span></div>
-      <p className="muted">{s ? `${num(s.subscribedThisMonth)} of the ${num(s.registeredThisMonth)} students who joined ${phrase} have a paid plan now.` : 'Numbers are unavailable right now.'}</p>
+      <p className="muted">{c ? `${num(c.withPlan)} of the ${num(c.registered)} students who joined ${phrase} have a plan now.` : 'Numbers are unavailable right now.'}</p>
       <section>
         <div className="sec-title">Where the new students are</div>
         <ul className="rows">
           {rows.map(r => {
-            const pct = s && s.registeredThisMonth > 0 ? Math.min(100, (r.value / s.registeredThisMonth) * 100) : 0;
+            const pct = c && c.registered > 0 ? Math.min(100, (r.value / c.registered) * 100) : 0;
             return (
               <li key={r.label}>
                 <Link className="row-link" href={r.href}>

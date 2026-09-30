@@ -6,5 +6,5 @@ const target = '.next/standalone';
 if (existsSync(target)) {
   cpSync('.next/static', `${target}/.next/static`, { recursive: true });
   if (existsSync('public')) cpSync('public', `${target}/public`, { recursive: true });
-  console.log('Copied .next/static and public into .next/standalone');
+  process.stdout.write('Copied .next/static and public into .next/standalone\n');
 }
