@@ -1,20 +1,21 @@
 'use client';
 
-import CatalogueList from '@/components/CatalogueList';
+import CatalogueBrowser from '@/components/CatalogueBrowser';
+import { courseMaterialStatusForm } from '@/lib/catalogue';
 import { kindLabel } from '@/lib/kind';
 import type { CourseMaterialRow } from '@/lib/types';
 
-export default function CourseMaterialsList({ initial }: { initial: { rows: CourseMaterialRow[]; total: number } | null }) {
+export default function CourseMaterialsList({ initial, notice, assetBase }: { initial: { rows: CourseMaterialRow[]; total: number } | null; notice?: string; assetBase: string }) {
+  const where = (r: CourseMaterialRow) => [r.subCategoryId?.categoryId?.categoryName, r.subCategoryId?.subCategoryName].filter(Boolean).join(' › ');
   return (
-    <CatalogueList<CourseMaterialRow>
-      noun="course material" base="/course-materials" endpoint="coursematerial" listPath="coursematerial/all" serverPaged
-      nameOf={r => r.courseMaterialName} initial={initial}
-      columns={[
-        { header: 'Course material', cell: r => <strong>{r.courseMaterialName}</strong> },
-        { header: 'Category', cell: r => r.subCategoryId?.categoryId?.categoryName ?? '—' },
-        { header: 'Sub category', cell: r => r.subCategoryId?.subCategoryName ?? '—' },
-        { header: 'Type', cell: r => kindLabel(r.type) },
-      ]}
+    <CatalogueBrowser<CourseMaterialRow>
+      noun="course material" plural="course materials" base="/course-materials" endpoint="coursematerial" listPath="coursematerial/all" nameParam="courseMaterialName"
+      typeFilter={false} searchable={false}
+      nameOf={r => r.courseMaterialName} subOf={r => kindLabel(r.type)}
+      parentHeader="Category › Sub category" parentOf={where}
+      media={{ linkHeader: 'Video link', linkOf: r => r.courseMaterialUrl }}
+      statusForm={courseMaterialStatusForm} assetBase={assetBase} initial={initial} notice={notice}
+      panelExtra={r => [['Category', r.subCategoryId?.categoryId?.categoryName ?? '—'], ['Sub category', r.subCategoryId?.subCategoryName ?? '—']]}
     />
   );
 }

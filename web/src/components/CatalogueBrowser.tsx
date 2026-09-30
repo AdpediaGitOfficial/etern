@@ -33,6 +33,32 @@ interface Props<T extends Row> {
   initial: { rows: T[]; total: number } | null;
   notice?: string;
   panelExtra?: (r: T) => [string, ReactNode][];
+  /** The backend ignores search for some lists; then the search box is left out. Default true. */
+  searchable?: boolean;
+  /** Media lists (course materials) show a thumbnail beside the name and the link in its own column. */
+  media?: { linkHeader: string; linkOf: (r: T) => string };
+}
+
+/** Only http(s) links become clickable, so a stored javascript: URL can never run. */
+export const safeHref = (u: string): string | null => (/^https?:\/\//i.test(u) ? u : null);
+
+function Thumb({ src, name }: { src: string | null; name: string }) {
+  const [bad, setBad] = useState(false);
+  return src && !bad ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="mt" src={src} alt="" loading="lazy" onError={() => setBad(true)} />
+  ) : <span className="mt ph" aria-hidden="true">{name.trim().slice(0, 1).toUpperCase() || '?'}</span>;
+}
+
+function LinkCell({ url, onCopy }: { url: string; onCopy: () => void }) {
+  const href = safeHref(url);
+  if (!url) return <span className="muted">No link</span>;
+  return (
+    <div className="linkcell">
+      {href ? <a href={href} target="_blank" rel="noopener noreferrer" title={url}>{url.replace(/^https?:\/\//i, '')}</a> : <span className="muted" title="Not a web link">{url}</span>}
+      <button type="button" className="btn ghost sm" aria-label="Copy link" onClick={async () => { try { await navigator.clipboard.writeText(url); onCopy(); } catch { /* clipboard blocked: nothing to do */ } }}>Copy</button>
+    </div>
+  );
 }
 
 export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
@@ -124,10 +150,12 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
   return (
     <div className="card flush">
       <div className="tools">
-        <label className="searchbox">
-          <Icon name="search" size={16} />
-          <input type="search" placeholder={`Search ${p.plural}`} aria-label={`Search ${p.plural}`} value={q} onChange={e => setQ(e.target.value)} />
-        </label>
+        {p.searchable === false ? null : (
+          <label className="searchbox">
+            <Icon name="search" size={16} />
+            <input type="search" placeholder={`Search ${p.plural}`} aria-label={`Search ${p.plural}`} value={q} onChange={e => setQ(e.target.value)} />
+          </label>
+        )}
         <div className="tabs" role="tablist" aria-label="Filter by status">
           {([['all', 'All'], ['on', 'Active'], ['off', 'Inactive']] as const).map(([k, label]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => pickTab(k)}>{label}</button>
@@ -146,17 +174,24 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
         <PanelError onRetry={() => load()} busy={loading} />
       ) : (
         <div className="tw flat" aria-busy={loading}>
-          <table className="tbl pk">
-            <thead><tr><th>{p.noun[0].toUpperCase() + p.noun.slice(1)}</th><th>{p.parentHeader}</th><th>Type</th><th>Status</th><th className="narrow-col"><span className="sr-only">Actions</span></th></tr></thead>
+          <table className={'tbl pk' + (p.media ? ' media' : '')}>
+            <thead><tr><th>{p.noun[0].toUpperCase() + p.noun.slice(1)}</th>{p.media ? <th>{p.media.linkHeader}</th> : null}<th>{p.parentHeader}</th>{p.media ? null : <th>Type</th>}<th>Status</th><th className="narrow-col"><span className="sr-only">Actions</span></th></tr></thead>
             <tbody className={loading ? 'dim' : ''}>
               {rows.map(r => (
                 <tr key={r._id} className="clickable" onClick={open(r)}>
                   <td>
-                    <button type="button" className="strong-link linkbtn" onClick={() => setDetail(r)}>{p.nameOf(r)}</button>
-                    <div className="desc">{p.subOf(r)}</div>
+                    <div className={p.media ? 'mcell' : undefined}>
+                      {p.media ? <Thumb src={r.imageUrl ? p.assetBase + r.imageUrl : null} name={p.nameOf(r)} /> : null}
+                      <div className="mtext">
+                        <button type="button" className="strong-link linkbtn" onClick={() => setDetail(r)}>{p.nameOf(r)}</button>
+                        <div className="desc">{p.subOf(r)}</div>
+                        {p.media ? <div className="desc mob-link">{p.media.linkOf(r).replace(/^https?:\/\//i, '')}</div> : null}
+                      </div>
+                    </div>
                   </td>
+                  {p.media ? <td><LinkCell url={p.media.linkOf(r)} onCopy={() => say('Link copied.')} /></td> : null}
                   <td>{p.parentOf(r) || '—'}</td>
-                  <td><span className="chip">{kindLabel(r.type)}</span></td>
+                  {p.media ? null : <td><span className="chip">{kindLabel(r.type)}</span></td>}
                   <td>
                     <button type="button" className="sw" role="switch" aria-checked={r.isActive} onClick={() => setActive(r, !r.isActive)}
                             aria-label={`${p.nameOf(r)}: ${r.isActive ? 'active' : 'inactive'}. Press to ${r.isActive ? 'turn off' : 'turn on'}`}>
@@ -192,6 +227,13 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
           <>
             <button type="button" className="sw" role="switch" aria-checked={detail.isActive} onClick={() => setActive(detail, !detail.isActive)}
                     aria-label={`Status: ${detail.isActive ? 'active' : 'inactive'}. Press to change`}><i /><span>{detail.isActive ? 'Active' : 'Inactive'}</span></button>
+            {p.media ? (
+              <section>
+                <Thumb src={detail.imageUrl ? p.assetBase + detail.imageUrl : null} name={p.nameOf(detail)} />
+                <div className="sec-title" style={{ marginTop: 12 }}>{p.media.linkHeader}</div>
+                <LinkCell url={p.media.linkOf(detail)} onCopy={() => say('Link copied.')} />
+              </section>
+            ) : null}
             <section>
               <div className="sec-title">Details</div>
               <ul className="rows">
@@ -201,7 +243,7 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
               </ul>
             </section>
             <section><div className="sec-title">Description</div><p>{detail.description?.trim() || 'No description'}</p></section>
-            {detail.imageUrl ? (
+            {detail.imageUrl && !p.media ? (
               <section><div className="sec-title">Image</div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className="pic" src={p.assetBase + detail.imageUrl} alt={`${p.nameOf(detail)} image`} /></section>

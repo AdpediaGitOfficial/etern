@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { categoryStatusForm, escapeRegex, noticeFor, listQuery, subCategoryStatusForm } from './catalogue';
-import type { CategoryRow, SubCategoryRow } from './types';
+import { categoryStatusForm, courseMaterialStatusForm, escapeRegex, noticeFor, listQuery, subCategoryStatusForm } from './catalogue';
+import type { CategoryRow, CourseMaterialRow, SubCategoryRow } from './types';
 
 const base = { per: 10, nameParam: 'categoryName', typeParam: true };
 
@@ -55,5 +55,16 @@ describe('noticeFor', () => {
     expect(noticeFor('deleted', 'Sub category')).toBe('Sub category deleted.');
     expect(noticeFor('<script>', 'Category')).toBeUndefined();
     expect(noticeFor(undefined, 'Category')).toBeUndefined();
+  });
+});
+
+describe('courseMaterialStatusForm', () => {
+  it('keeps the link and both parents', () => {
+    const m = { _id: '1', courseMaterialName: 'V', courseMaterialUrl: 'https://vimeo.com/1', sorting: 2, type: 'kid', isActive: true, subCategoryId: { _id: 's', subCategoryName: 'S', categoryId: { _id: 'c', categoryName: 'C' } } } as CourseMaterialRow;
+    const fd = courseMaterialStatusForm(m, false);
+    expect(fd.get('courseMaterialUrl')).toBe('https://vimeo.com/1');
+    expect(fd.get('categoryId')).toBe('c');
+    expect(fd.get('subCategoryId')).toBe('s');
+    expect(fd.get('isActive')).toBe('false');
   });
 });

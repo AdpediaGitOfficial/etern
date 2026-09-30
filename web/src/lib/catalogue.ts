@@ -1,4 +1,4 @@
-import type { CategoryRow, SubCategoryRow } from './types';
+import type { CategoryRow, CourseMaterialRow, SubCategoryRow } from './types';
 
 /** The backend feeds the search word into a regular expression, so special characters are escaped first. */
 export const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -36,6 +36,19 @@ export function subCategoryStatusForm(s: SubCategoryRow, isActive: boolean): For
   fd.append('categoryId', s.categoryId?._id ?? '');
   fd.append('type', s.type);
   fd.append('description', s.description ?? '');
+  fd.append('isActive', String(isActive));
+  return fd;
+}
+
+export function courseMaterialStatusForm(m: CourseMaterialRow, isActive: boolean): FormData {
+  const fd = new FormData();
+  fd.append('courseMaterialName', m.courseMaterialName);
+  fd.append('courseMaterialUrl', m.courseMaterialUrl);
+  fd.append('sorting', String(m.sorting));
+  fd.append('categoryId', m.subCategoryId?.categoryId?._id ?? '');
+  fd.append('subCategoryId', m.subCategoryId?._id ?? '');
+  fd.append('type', m.type);
+  fd.append('description', m.description ?? '');
   fd.append('isActive', String(isActive));
   return fd;
 }
