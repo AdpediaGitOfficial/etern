@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pager } from '@/components/ui';
+import { api } from '@/lib/api';
 import { fmtDate, inr } from '@/lib/format';
 import type { Paged, Payment } from '@/lib/types';
 
@@ -24,14 +25,12 @@ export default function PaymentsList({ mode, initial }: { mode: 'offline' | 'onl
     const p = new URLSearchParams({ mode, page: String(page), limit: String(PER) });
     if (q.trim()) p.set('studentName', q.trim());
     try {
-      const res = await fetch(`/api/proxy/subscription/offlinepayments?${p}`, { signal });
-      if (res.status === 401) { window.location.assign('/api/auth/logout'); return; }
-      if (!res.ok) throw new Error();
-      const body = await res.json();
-      setRows(body.result?.data ?? []);
-      setTotal(body.result?.totalCount ?? 0);
-    } catch (e) {
-      if ((e as Error).name !== 'AbortError') setError(true);
+      const r = await api<{ result?: Paged<Payment> }>(`subscription/offlinepayments?${p}`, { signal });
+      if (!r.ok) { setError(true); return; }
+      setRows(r.body?.result?.data ?? []);
+      setTotal(r.body?.result?.totalCount ?? 0);
+    } catch {
+      /* aborted: a newer request is in flight */
     } finally {
       setLoading(false);
     }

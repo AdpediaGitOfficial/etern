@@ -6,10 +6,10 @@ import { usePathname } from 'next/navigation';
 type Item = { label: string; href?: string };
 type Group = { label: string; href?: string; items?: Item[] };
 
-/** Mirrors the Angular menu. Screens not yet moved to Next.js are listed but disabled (phase 3). */
+/** Mirrors the Angular menu. Screens not yet moved to Next.js are listed but disabled. */
 const NAV: Group[] = [
   { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Master Operations', items: [{ label: 'Packages' }, { label: 'Categories' }, { label: 'Sub Categories' }, { label: 'Course Materials' }] },
+  { label: 'Master Operations', items: [{ label: 'Packages', href: '/packages' }, { label: 'Categories', href: '/categories' }, { label: 'Sub Categories', href: '/sub-categories' }, { label: 'Course Materials', href: '/course-materials' }] },
   { label: 'Users', items: [{ label: 'All Users', href: '/users' }, { label: 'Upcoming Expiry', href: '/users/upcoming' }, { label: 'Expired Subscriptions', href: '/users/expired' }] },
   { label: 'Offline Payments', href: '/offline-payments' },
   { label: 'Online Payments', href: '/online-payments' },

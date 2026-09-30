@@ -70,3 +70,45 @@ export interface PackageWithCosts {
   description?: string;
   packageCosts?: PackageCost[];
 }
+
+export type Kind = 'kid' | 'parent';
+export interface PackageRow {
+  _id: string;
+  packageName: string;
+  ageFrom: number;
+  ageTo: number;
+  description?: string;
+  isActive: boolean;
+  packageCosts?: { _id?: string; price: number; validity: number; from: string; to: string }[];
+}
+export interface CategoryRow {
+  _id: string;
+  categoryName: string;
+  sorting: number;
+  type: Kind;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  packageId: { _id: string; packageName: string };
+}
+export interface SubCategoryRow {
+  _id: string;
+  subCategoryName: string;
+  sorting: number;
+  type: Kind;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  categoryId: { _id: string; categoryName: string; packageId?: { packageName?: string } };
+}
+export interface CourseMaterialRow {
+  _id: string;
+  courseMaterialName: string;
+  courseMaterialUrl: string;
+  sorting: number;
+  type: Kind;
+  description?: string;
+  imageUrl?: string;
+  isActive: boolean;
+  subCategoryId: { _id: string; subCategoryName: string; categoryId: { _id: string; categoryName: string } };
+}

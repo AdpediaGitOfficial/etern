@@ -1,12 +1,16 @@
 import { cookies } from 'next/headers';
-import { SESSION_COOKIE, backendUrl } from '@/lib/config';
-import { isAllowed } from '@/lib/proxy';
+import { backendUrl, sessionCookieName } from '@/lib/config';
+import { HAS_BODY, isAllowed } from '@/lib/proxy';
+import { forbidden, isSameSiteRequest } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 const MAX_BODY = 3 * 1024 * 1024; // 2 MB image plus form fields
+const PASS_THROUGH = ['content-type', 'content-disposition'];
 
 async function handle(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!isSameSiteRequest(req)) return forbidden();
+
+  const token = (await cookies()).get(sessionCookieName())?.value;
   if (!token) return Response.json({ message: 'Not signed in' }, { status: 401 });
 
   const path = (await ctx.params).path.join('/');
@@ -15,8 +19,10 @@ async function handle(req: Request, ctx: { params: Promise<{ path: string[] }> }
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
   const init: RequestInit & { duplex?: 'half' } = { method: req.method, headers, cache: 'no-store', signal: AbortSignal.timeout(30_000) };
 
-  if (req.method === 'POST') {
-    if (Number(req.headers.get('content-length') || 0) > MAX_BODY) {
+  if (HAS_BODY.has(req.method)) {
+    // A missing or bad length is refused too, so a client cannot stream an unbounded body.
+    const length = Number(req.headers.get('content-length'));
+    if (!Number.isFinite(length) || length < 0 || length > MAX_BODY) {
       return Response.json({ message: 'The upload is too large.' }, { status: 413 });
     }
     const ct = req.headers.get('content-type');
@@ -32,13 +38,12 @@ async function handle(req: Request, ctx: { params: Promise<{ path: string[] }> }
     return Response.json({ message: 'The server is unreachable.' }, { status: 502 });
   }
 
-  const out = new Headers();
-  for (const h of ['content-type', 'content-disposition']) {
+  const out = new Headers({ 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  for (const h of PASS_THROUGH) {
     const v = res.headers.get(h);
     if (v) out.set(h, v);
   }
-  out.set('Cache-Control', 'no-store');
   return new Response(res.body, { status: res.status, headers: out });
 }
 
-export { handle as GET, handle as POST, handle as DELETE };
+export { handle as GET, handle as POST, handle as PUT, handle as DELETE };

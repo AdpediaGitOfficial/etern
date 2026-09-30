@@ -1,13 +1,13 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { SESSION_COOKIE, assetBaseUrl } from '@/lib/config';
+import { assetBaseUrl, sessionCookieName } from '@/lib/config';
 import { isUnauthorised, loadDashboard } from '@/lib/dashboardData';
 import DashboardView from './DashboardView';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const token = (await cookies()).get(sessionCookieName())?.value;
   if (!token) redirect('/login');
 
   const data = await loadDashboard(token);

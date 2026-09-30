@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, Notice, Pager, Pill } from '@/components/ui';
+import { api, download } from '@/lib/api';
 import { fmtDate, isExpired } from '@/lib/format';
 import type { Paged, Student } from '@/lib/types';
 
@@ -42,14 +43,12 @@ export default function UsersList({ filter, initial }: { filter: Filter; initial
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/proxy/student/allAdmin?${params(true)}`, { signal });
-      if (res.status === 401) { window.location.assign('/api/auth/logout'); return; }
-      if (!res.ok) throw new Error();
-      const body = await res.json();
-      setRows(body.result?.data ?? []);
-      setTotal(body.result?.totalCount ?? 0);
-    } catch (e) {
-      if ((e as Error).name !== 'AbortError') setError('We couldn’t load students.');
+      const r = await api<{ result?: Paged<Student> }>(`student/allAdmin?${params(true)}`, { signal });
+      if (!r.ok) { setError('We couldn’t load students.'); return; }
+      setRows(r.body?.result?.data ?? []);
+      setTotal(r.body?.result?.totalCount ?? 0);
+    } catch {
+      /* aborted: a newer request is in flight */
     } finally {
       setLoading(false);
     }
@@ -69,17 +68,14 @@ export default function UsersList({ filter, initial }: { filter: Filter; initial
     if (!confirm) return;
     setBusy(true);
     const { kind, s } = confirm;
-    try {
-      const res = await fetch(`/api/proxy/student/${kind === 'unsub' ? 'unsubscribe/' : ''}${s._id}`, { method: kind === 'delete' ? 'DELETE' : 'GET' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setNotice({ tone: 'bad', text: body.message || (kind === 'delete' ? 'Could not delete the student.' : 'Could not unsubscribe the student.') });
-      } else {
-        setNotice({ tone: 'good', text: kind === 'delete' ? `${s.fullName} was deleted.` : `${s.fullName} was unsubscribed.` });
-        await load();
-      }
-    } catch {
-      setNotice({ tone: 'bad', text: 'The server is unreachable. Try again.' });
+    const isDelete = kind === 'delete';
+    const r = await api(`student/${isDelete ? '' : 'unsubscribe/'}${s._id}`, { method: isDelete ? 'DELETE' : 'GET' },
+      isDelete ? 'Could not delete the student.' : 'Could not unsubscribe the student.');
+    if (r.ok) {
+      setNotice({ tone: 'good', text: isDelete ? `${s.fullName} was deleted.` : `${s.fullName} was unsubscribed.` });
+      await load();
+    } else {
+      setNotice({ tone: 'bad', text: r.message });
     }
     setBusy(false);
     setConfirm(null);
@@ -87,18 +83,8 @@ export default function UsersList({ filter, initial }: { filter: Filter; initial
 
   async function exportXlsx() {
     setExporting(true);
-    try {
-      const res = await fetch(`/api/proxy/student/export-students?${params(false)}`);
-      if (!res.ok) throw new Error();
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'users.xlsx';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch {
-      setNotice({ tone: 'bad', text: 'The export failed. Try again.' });
-    }
+    const ok = await download(`student/export-students?${params(false)}`, 'users.xlsx');
+    if (!ok) setNotice({ tone: 'bad', text: 'The export failed. Try again.' });
     setExporting(false);
   }
 

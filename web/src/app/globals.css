@@ -170,3 +170,13 @@ a.btn.primary, .btn.primary { color: #fff; }
 .btn.danger-o { color: var(--bad); }
 .filters input, .filters select { height: 36px; }
 .filters input[type="search"] { min-width: 230px; }
+
+/* phase 3 */
+.cost-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px 16px; align-items: end; padding: 12px 0; border-top: 1px solid var(--ln); }
+.cost-row:first-of-type { border-top: 0; }
+.cost-row label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 13px; }
+.cost-row input, .form select, .f-grid select { border: 1px solid var(--ln); border-radius: 8px; padding: 8px 10px; background: #fff; font: inherit; width: 100%; }
+.cost-row input[aria-invalid="true"], .f-grid select[aria-invalid="true"] { border-color: var(--bad); }
+.cost-row .remove { align-self: end; justify-self: start; }
+.form select:disabled { background: #f4f7f9; color: var(--mu); }
+.form .acts { margin-top: 22px; }

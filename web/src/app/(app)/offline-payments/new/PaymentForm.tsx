@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Notice } from '@/components/ui';
+import { api } from '@/lib/api';
 import { inr } from '@/lib/format';
+import { imageProblem } from '@/lib/validate';
 import type { PackageWithCosts } from '@/lib/types';
 
-const MAX_BYTES = 2 * 1024 * 1024;
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function PaymentForm({ studentId, studentName }: { studentId: string; studentName: string }) {
@@ -29,12 +30,9 @@ export default function PaymentForm({ studentId, studentName }: { studentId: str
 
   async function loadPackages() {
     setPkgError(false);
-    try {
-      const res = await fetch('/api/proxy/package/allAdmin?isActive=true');
-      if (res.status === 401) { window.location.assign('/api/auth/logout'); return; }
-      if (!res.ok) throw new Error();
-      setPackages((await res.json()).result ?? []);
-    } catch { setPkgError(true); }
+    const r = await api<{ result?: PackageWithCosts[] }>('package/allAdmin?isActive=true');
+    if (r.ok) setPackages(r.body?.result ?? []);
+    else setPkgError(true);
   }
   useEffect(() => { loadPackages(); }, []);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
@@ -45,8 +43,8 @@ export default function PaymentForm({ studentId, studentName }: { studentId: str
     setPreview(null);
     setFile(null);
     if (!f) return;
-    if (!['image/jpeg', 'image/png'].includes(f.type)) { setFileError('Only JPEG and PNG images are allowed.'); return; }
-    if (f.size > MAX_BYTES) { setFileError('The image must be 2 MB or smaller.'); return; }
+    const problem = imageProblem(f);
+    if (problem) { setFileError(problem); return; }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   }
@@ -80,15 +78,9 @@ export default function PaymentForm({ studentId, studentName }: { studentId: str
     if (file) fd.append('image', file);
 
     setBusy(true);
-    try {
-      const res = await fetch('/api/proxy/subscription/add-offline-payment', { method: 'POST', body: fd });
-      if (res.status === 401) { window.location.assign('/api/auth/logout'); return; }
-      if (res.ok) { router.push('/offline-payments?added=1'); return; }
-      const body = await res.json().catch(() => ({}));
-      setSubmitError(body.errors?.[0]?.msg || body.message || 'The payment could not be saved. Check the details and try again.');
-    } catch {
-      setSubmitError('The server is unreachable. Nothing was saved. Try again.');
-    }
+    const r = await api('subscription/add-offline-payment', { method: 'POST', body: fd }, 'The payment could not be saved. Check the details and try again.');
+    if (r.ok) { router.push('/offline-payments?added=1'); return; }
+    setSubmitError(r.message);
     setBusy(false);
   }
 

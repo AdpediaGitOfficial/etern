@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Breadcrumb, PageHead } from '@/components/ui';
 import { authedGet } from '@/lib/server';
 import type { Paged, Payment } from '@/lib/types';
