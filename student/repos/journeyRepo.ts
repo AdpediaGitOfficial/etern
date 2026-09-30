@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import studentModel from '../models/studentModel';
 import usersModel from '../../user/models/userModel';
 import packageModel from '../../package/models/packageModel';
@@ -16,6 +17,9 @@ import { buildTimeline } from '../journey';
 
 const DAY = 86400000;
 const ids = (rows: { _id: unknown }[]): string[] => rows.map((r) => String(r._id));
+/** Only ids Mongo can cast. Older rows sometimes hold a name or an empty string, which would otherwise throw. */
+const objectIds = (values: unknown[]): string[] =>
+  values.map(String).filter((v) => Types.ObjectId.isValid(v));
 
 /** Everything an admin needs about one student: who, plan, what they can open, how they are learning, and their history. */
 export const getStudentJourney = async (studentId: string) => {
@@ -23,14 +27,16 @@ export const getStudentJourney = async (studentId: string) => {
   if (!student) throw new AppError('No student found for the given id', HttpStatus.NOT_FOUND);
   const now = new Date();
   const access = accessInfo(student, now);
-  const parent = await usersModel.findOne({ _id: student.userId }).select('fullName parentName mobileNumber email createdAt').lean();
+  const parent = Types.ObjectId.isValid(String(student.userId))
+    ? await usersModel.findOne({ _id: student.userId }).select('fullName parentName mobileNumber email createdAt').lean()
+    : null;
 
   // Plans and payments
   const subs = await subscriptionModel.find({ studentId, isDeleted: { $ne: true } }).sort({ createdAt: 1 }).lean();
-  const payments = await paymentModel.find({ _id: { $in: subs.map((s) => s.paymentId) } }).lean();
-  const gateways = await paymentgatewayModel.find({ _id: { $in: payments.map((p) => p.paymentGatewayId) } }).lean();
-  const packages = await packageModel.find({ _id: { $in: subs.map((s) => s.packageId) } }).select('packageName').lean();
-  const admins = await usersModel.find({ _id: { $in: subs.map((s) => s.createdBy) } }).select('fullName').lean();
+  const payments = await paymentModel.find({ _id: { $in: objectIds(subs.map((s) => s.paymentId)) } }).lean();
+  const gateways = await paymentgatewayModel.find({ _id: { $in: objectIds(payments.map((p) => p.paymentGatewayId)) } }).lean();
+  const packages = await packageModel.find({ _id: { $in: objectIds(subs.map((s) => s.packageId)) } }).select('packageName').lean();
+  const admins = await usersModel.find({ _id: { $in: objectIds(subs.map((s) => s.createdBy)) } }).select('fullName').lean();
   const byId = <T extends { _id: unknown }>(rows: T[]) => new Map(rows.map((r) => [String(r._id), r]));
   const payMap = byId(payments), gwMap = byId(gateways), pkgMap = byId(packages), adminMap = byId(admins);
   const subscriptions = subs.map((s) => {
