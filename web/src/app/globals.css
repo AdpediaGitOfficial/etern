@@ -7,17 +7,7 @@
   --tip-bg: #15232e; --tip-fg: #fff;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --brand: #3cc6d3; --brand-s: #12383d; --brand-btn: #0b8a96; --brand-btn-hover: #0e9fac;
-    --ink: #e7eef3; --mu: #93a5b3; --ln: #26343f; --sk: #22313c; --bg: #0e161c;
-    --card: #16212a; --sf2: #1b2833; --chip: #22313c; --off: #61727f;
-    --good: #4fd1a0; --good-s: #123a2c; --bad: #f28b8b; --bad-s: #4a2222; --mid: #f5c04d;
-    --warn-bg: #3d3010; --warn-fg: #f5c04d; --danger-line: #5a3030; --bad-btn: #c93a3a;
-    --tip-bg: #e7eef3; --tip-fg: #15232e;
-    color-scheme: dark;
-  }
-}
+/* Light is the default. Dark applies only when the user picks it (data-theme="dark"). */
 :root[data-theme="dark"] {
   --brand: #3cc6d3; --brand-s: #12383d; --brand-btn: #0b8a96; --brand-btn-hover: #0e9fac;
   --ink: #e7eef3; --mu: #93a5b3; --ln: #26343f; --sk: #22313c; --bg: #0e161c;

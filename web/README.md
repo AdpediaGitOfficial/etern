@@ -13,8 +13,8 @@ Left out on purpose: the Angular users list had a **"Fixed OTP" button** that ma
 That is a standing login backdoor for the student's account, so it was not ported. Say if you need it.
 
 ## Enterprise dashboard features
-- **Dark mode.** The sun/moon button switches themes. It follows the system setting until you choose, and the choice is stored in a cookie
-  so the server renders the right colours on the first paint (no flash, no inline script).
+- **Light and dark mode.** Everyone starts in **light** mode, whatever their computer's setting. The sun/moon button switches themes, and the
+  choice is stored in a cookie so the server renders the right colours on the first paint (no flash, no inline script).
 - **Quick search (Ctrl/⌘ + K).** Jump to any page or action, or find a student by name or mobile number. Fully keyboard operable.
 - **Needs attention.** Expired subscriptions, subscriptions expiring within 7 days, sub categories under 40% completion and sub categories
   without an image, each linking to the screen that fixes it. The "Upcoming Expiry" menu item shows the live count.
