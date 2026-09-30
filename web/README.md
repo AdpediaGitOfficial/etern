@@ -70,6 +70,17 @@ Same layout as packages: a compact table with server-side search, status tabs (a
 - The dashboard loads the five existing endpoints in parallel on the server. One failing panel shows its own error and
   **Try again** button; the rest keep working. **Refresh** re-fetches through `/api/dashboard`.
 
+## Run on a server without Docker
+```bash
+cd web
+npm ci && npm run build        # also copies .next/static and public next to the server (postbuild)
+BACKEND_URL=https://api.example.com PORT=3000 HOSTNAME=0.0.0.0 npm start   # node .next/standalone/server.js
+```
+- Put Apache or nginx in front as a **reverse proxy for every path** (including `/_next/*` and `/logo.png`). Do not serve `web/` as static files.
+- Give the environment variables to the process itself (pm2 `--env`, systemd `Environment=`, or the shell). The standalone server does not read `.env.local`.
+- Symptoms: a plain unstyled page with a broken logo means `.next/static` and `public` are missing next to `server.js` (run the build again).
+  "We couldn't load this" on every card means the server cannot reach the API at `BACKEND_URL`.
+
 ## Run locally
 ```bash
 cp .env.example .env.local     # set BACKEND_URL
