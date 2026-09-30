@@ -5,6 +5,8 @@ import {
   updateStudent,
   getStudents,
   getStudentByIdAdmin,
+  getStudentSegments,
+  getStudentJourneyAdmin,
   exportStudent,
   studentSubscriptions,
   deleteStudent,
@@ -25,6 +27,8 @@ router.put('/updateStudent/:studentId', authenticateUser, studentUpdateValidatio
 //Admin panel Apis
 router.get('/allAdmin', authenticateAdmin, getStudents);
 router.get('/export-students', authenticateAdmin, exportStudent);
+router.get('/segments', authenticateAdmin, getStudentSegments);
+router.get('/:id/journey', authenticateAdmin, idValidation, getStudentJourneyAdmin);
 router.get('/dashboard/subscriptions', authenticateAdmin, studentSubscriptions);
 router.get('/:id', authenticateAdmin, getStudentByIdAdmin);
 router.delete('/:id', authenticateAdmin, idValidation, deleteStudent);

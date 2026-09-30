@@ -12,13 +12,14 @@ import {
   fixedOtpStudent,
 } from '../repos/studentRepo';
 import { IStudent, IStudentBody, StudentWithPayments } from '../../types/student/studentType';
+import { withAccess } from '../../subscription/accessRules';
 
 export const getStudentsByUserIdUseCase = async (userId: string): Promise<IStudent[]> => {
   const result = await findStudentsByUserId(userId);
   if (!result || result.length === 0) {
     throw new AppError('No students found for the given user', HttpStatus.NOT_FOUND);
   }
-  return result;
+  return result.map((student) => withAccess(student)) as IStudent[];
 };
 
 export const addStudentUseCase = async (data: IStudentBody): Promise<Pick<IStudent, '_id'>> => {

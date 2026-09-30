@@ -40,6 +40,7 @@ import { getCourseMaterialTrack } from '../../coursematerial/repos/courseMateria
 import { processAndUploadImage } from '../../utils/imageUploader';
 import { createStudent, updateStudent } from '../../student/repos/studentRepo';
 import { IStudentBody } from '../../types/student/studentType';
+import { withAccess } from '../../subscription/accessRules';
 import {
   findStudentExists,
   getStudentById,
@@ -101,7 +102,7 @@ export const verifyOtpUseCase = async (
   return {
     token,
     ...result,
-    studentDetails,
+    studentDetails: withAccess(studentDetails),
   } as unknown as { token: string } & Omit<IUserBody, keyof Document>;
 };
 
@@ -156,9 +157,10 @@ export const getProfileUseCase = async (userId: string): Promise<IUserProfile> =
   if (!studentDetails) {
     throw new AppError('No student found for the given studentId', HttpStatus.NOT_FOUND);
   }
+  // Subscription state is worked out from the dates on every call, so the app sees an ended or new plan without logging in again.
   return {
     ...result,
-    studentDetails,
+    studentDetails: withAccess(studentDetails),
   } as IUserProfile;
 };
 
@@ -193,8 +195,8 @@ export const updateUserUseCase = async (userId: string, data: IUserBody): Promis
   const studentDetails = await updateStudent(result.currentStudentId as string, studentData);
   return {
     ...result,
-    studentDetails,
-  } as IUserProfile;
+    studentDetails: withAccess(studentDetails),
+  } as unknown as IUserProfile;
 };
 
 export const getUsersUseCase = async (

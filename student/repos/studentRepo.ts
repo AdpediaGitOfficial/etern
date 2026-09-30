@@ -14,6 +14,7 @@ import { HttpStatus } from '../../common/httpStatus';
 import { ObjectID } from '../../utils/objectIdParser';
 import usersModel from '../../user/models/userModel';
 import mongoose from 'mongoose';
+import { EXPIRING_DAYS, freeVersionSettings, withAccess } from '../../subscription/accessRules';
 
 export const findStudentExists = async (
   studentId: string,
@@ -44,11 +45,13 @@ export const findPackage = async (
 
       if (expiry && expiry > now) {
         return { packageId: student.packageId.toString() };
-      } else {
-        // IMPORTANT: If they were subscribed but it expired, RETURN NULL (No access)
+      }
+      if (!freeVersionSettings().enabled) {
+        // Free version switched off: an expired plan means no access, as before.
         console.log('Subscription expired. Denying access.');
         return null;
       }
+      // Free version: fall through to the package for the student's age. Locked videos are handled per video.
     }
 
     // 2. If they never subscribed, find the default package for their age
@@ -166,6 +169,20 @@ export const getAllStudents = async (
     matchStage.subscriptionEndDate = { $lt: now };
   }
 
+  // Groups are worked out from the end date and never from the stored flag alone.
+  if (filters.segment === 'active') {
+    matchStage.subscribed = true;
+    matchStage.subscriptionEndDate = { $gt: now };
+  } else if (filters.segment === 'expiring') {
+    matchStage.subscribed = true;
+    matchStage.subscriptionEndDate = { $gt: now, $lte: new Date(now.getTime() + EXPIRING_DAYS * 86400000) };
+  } else if (filters.segment === 'lapsed') {
+    matchStage.subscriptionEndDate = { $ne: null, $exists: true };
+    matchStage.$nor = [{ subscribed: true, subscriptionEndDate: { $gt: now } }];
+  } else if (filters.segment === 'never') {
+    matchStage.subscriptionEndDate = { $in: [null] };
+  }
+
   const aggregatePipeline: any[] = [
     { $match: matchStage },
     {
@@ -246,12 +263,50 @@ export const getAllStudents = async (
     },
   );
 
-  const data = await studentModel.aggregate(aggregatePipeline);
+  const rows = await studentModel.aggregate(aggregatePipeline);
+  // The stored flag can be stale, so every row carries the state worked out from its dates.
+  const data = rows.map((row) => withAccess(row));
 
   return {
     data,
     totalCount,
   };
+};
+
+/** How many students are in each group. Counts only verified users, the same as the list. */
+export const getStudentSegmentCounts = async (): Promise<{ all: number; active: number; expiring: number; lapsed: number; never: number }> => {
+  const now = new Date();
+  const soon = new Date(now.getTime() + EXPIRING_DAYS * 86400000);
+  const rows: { _id: string; n: number }[] = await studentModel.aggregate([
+    { $match: { isDeleted: false } },
+    { $addFields: { userIdObj: { $toObjectId: '$userId' } } },
+    { $lookup: { from: 'users', localField: 'userIdObj', foreignField: '_id', as: 'user' } },
+    { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+    { $match: { 'user.mobileNumberVerified': true } },
+    {
+      $addFields: {
+        seg: {
+          $switch: {
+            branches: [
+              {
+                case: { $and: [{ $eq: ['$subscribed', true] }, { $gt: ['$subscriptionEndDate', now] }] },
+                then: { $cond: [{ $lte: ['$subscriptionEndDate', soon] }, 'expiring', 'active'] },
+              },
+              { case: { $ne: [{ $ifNull: ['$subscriptionEndDate', null] }, null] }, then: 'lapsed' },
+            ],
+            default: 'never',
+          },
+        },
+      },
+    },
+    { $group: { _id: '$seg', n: { $sum: 1 } } },
+  ]);
+  const n = (k: string): number => rows.find((r) => r._id === k)?.n ?? 0;
+  const expiring = n('expiring');
+  const active = n('active') + expiring; // "Subscribed" includes the ones about to expire
+  const lapsed = n('lapsed');
+  const never = n('never');
+  return { all: active + lapsed + never, active, expiring, lapsed, never };
 };
 
 export const getSubscribedStudentCount = async (): Promise<number> => {

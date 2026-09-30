@@ -35,6 +35,8 @@ export interface ICourseMaterialWithStatus extends ICourseMaterialBody {
   _id: string;
   viewedStatus: boolean;
   openStatus: boolean;
+  /** True on the free version for videos past the free ones. The link is then empty. */
+  locked: boolean;
 }
 
 export interface ICourseMaterialWatchHistoryBody extends Document {

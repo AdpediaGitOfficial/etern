@@ -12,6 +12,7 @@ import subCategoryModel from '../../subcategory/models/subCategoryModel';
 import { objectIdToString } from '../../utils/objectIdParser';
 import { ObjectId } from 'mongodb';
 import studentModel from '../../student/models/studentModel';
+import { freeMaterialIds, freeVersionSettings, hasActivePlan } from '../../subscription/accessRules';
 import AppError from '../../common/appError';
 import { HttpStatus } from '../../common/httpStatus';
 import courseMaterialWatchHistoryModel from '../models/courseMaterialWatchHistoryModel';
@@ -68,27 +69,17 @@ export class CourseMaterialRepo {
   ): Promise<ICourseMaterialWithStatus[]> {
     const student = await studentModel.findOne({ _id: studentId, isDeleted: false }).lean();
     if (!student) throw new AppError('Student Not Found', HttpStatus.BAD_REQUEST);
-    const hasValidSubscription =
-      student &&
-      student.subscribed &&
-      student.subscriptionEndDate &&
-      student.subscriptionEndDate > new Date();
+    // Worked out from the dates on every request, so a plan that ends or starts is reflected without logging in again.
+    const free = freeVersionSettings();
+    const lockingOn = free.enabled && !hasActivePlan(student);
 
-    let courseMaterials: ICourseMaterial[];
+    const courseMaterials = (await courseMaterialModel
+      .find({ subCategoryId, type, isActive: true, isDeleted: false })
+      .sort({ sorting: 1, _id: 1 })
+      .lean()) as unknown as ICourseMaterial[];
 
-    // If the student has a valid subscription, get all materials; otherwise, get only the first one
-    if (hasValidSubscription) {
-      courseMaterials = (await courseMaterialModel
-        .find({ subCategoryId, type, isActive: true, isDeleted: false })
-        .sort({ sorting: 1 })
-        .lean()) as unknown as ICourseMaterial[];
-    } else {
-      courseMaterials = (await courseMaterialModel
-        .find({ subCategoryId, type, isActive: true, isDeleted: false })
-        .sort({ sorting: 1 })
-        //.limit(1)
-        .lean()) as unknown as ICourseMaterial[];
-    }
+    // Free version: only the first videos of the sub category stay open. The rest are returned locked and without a link.
+    const openIds = lockingOn ? freeMaterialIds(courseMaterials, free.perSubCategory) : null;
     let openStatusIndex = 0;
     const viewedMaterialIds = new Set<string>();
     if (userId) {
@@ -106,20 +97,24 @@ export class CourseMaterialRepo {
       });
     }
 
+    const isLocked = (m: ICourseMaterial): boolean =>
+      openIds !== null && !openIds.has(objectIdToString(m._id as ObjectId));
+
     const courseMaterialsWithStatus: ICourseMaterialWithStatus[] = courseMaterials.map(
       (material, index) => ({
         _id: objectIdToString(material._id as ObjectId),
         courseMaterialName: material.courseMaterialName,
         subCategoryId: material.subCategoryId,
-        courseMaterialUrl: material.courseMaterialUrl,
+        courseMaterialUrl: isLocked(material) ? '' : material.courseMaterialUrl,
         sorting: material.sorting,
         description: material.description,
         isActive: material.isActive,
         isDeleted: material.isDeleted,
         type: material.type,
         viewedStatus: viewedMaterialIds.has(objectIdToString(material._id as ObjectId)),
-        openStatus: index === openStatusIndex,
+        openStatus: index === openStatusIndex && !isLocked(material),
         imageUrl: material.imageUrl,
+        locked: isLocked(material),
       }),
     );
 
@@ -160,6 +155,25 @@ export const checkUserCourseIdExist = async (
 export const trackCourseMaterial = async (data: ITrackCourseMaterialView): Promise<boolean> => {
   await courseMaterialViewModel.create({ ...data });
   return true;
+};
+
+/** False only when the free version is on, the student has no running plan and the video is past the free ones. */
+export const isMaterialOpenForStudent = async (
+  studentId: string,
+  courseMaterialId: string,
+): Promise<boolean> => {
+  const free = freeVersionSettings();
+  if (!free.enabled) return true;
+  const student = await studentModel.findOne({ _id: studentId, isDeleted: false }).lean();
+  if (!student || hasActivePlan(student)) return true;
+  const material = await courseMaterialModel.findOne({ _id: courseMaterialId, isDeleted: false }).lean();
+  if (!material) return true;
+  const siblings = await courseMaterialModel
+    .find({ subCategoryId: material.subCategoryId, type: material.type, isActive: true, isDeleted: false })
+    .sort({ sorting: 1, _id: 1 })
+    .select('_id subCategoryId sorting')
+    .lean();
+  return freeMaterialIds(siblings, free.perSubCategory).has(String(material._id));
 };
 
 export const checkCourseMaterialExist = async (

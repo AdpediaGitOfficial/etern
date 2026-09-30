@@ -4,6 +4,7 @@ import {
   CourseMaterialRepo,
   checkUserCourseIdExist,
   trackCourseMaterial,
+  isMaterialOpenForStudent,
   checkCourseMaterialExist,
   saveCourseMaterial,
   updateCourseMaterial,
@@ -69,6 +70,13 @@ export const getCourseMaterialBySubCategoryIdUseCase = async (
   return courseMaterials;
 };
 
+/** A locked video cannot be tracked or watched even if the app sends the request anyway. */
+const assertMaterialOpen = async (studentId: string, courseMaterialId: string): Promise<void> => {
+  if (!(await isMaterialOpenForStudent(studentId, courseMaterialId))) {
+    throw new AppError('This video is locked. Subscribe to watch it.', HttpStatus.FORBIDDEN);
+  }
+};
+
 export const trackCourseMaterialUserUseCase = async (
   data: ITrackCourseMaterialView,
   userId: string,
@@ -78,6 +86,7 @@ export const trackCourseMaterialUserUseCase = async (
   const courseMaterialExist = await checkCourseMaterialExist(data.courseMaterialId);
   if (!courseMaterialExist)
     throw new AppError('courseMaterialId Not Found', HttpStatus.BAD_REQUEST);
+  await assertMaterialOpen(data.studentId, data.courseMaterialId);
   //check already viewed
   const trackExist = await checkUserCourseIdExist(data.studentId, data.courseMaterialId);
   if (!trackExist) await trackCourseMaterial(data);
@@ -132,6 +141,7 @@ export const courseMaterialWatchHistoryUseCase = async (
   );
   if (!courseMaterialExist)
     throw new AppError('courseMaterialId Not Found', HttpStatus.BAD_REQUEST);
+  await assertMaterialOpen(data.studentId, data.courseMaterialId);
   await saveCourseMaterialWatchHistory(data);
   return true;
 };

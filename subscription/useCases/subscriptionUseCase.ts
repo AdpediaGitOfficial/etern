@@ -19,7 +19,9 @@ import {
   checkStudentIdExist,
   updateStudentSubscription,
   checkStudentExist,
+  getStudentById,
 } from '../../student/repos/studentRepo';
+import { nextPlanWindow } from '../accessRules';
 import { checkPackageExists } from '../../package/repos/packageRepo';
 import { packageCostDetail } from '../../packagecost/repos/packageCostRepo';
 import { PaymentgatewayRepo } from '../../paymentgateway/repos/paymentgatewayRepo';
@@ -41,9 +43,12 @@ export const subscriptionUseCase = async (
     throw new AppError('No package cost found for the given packageCost ID', HttpStatus.NOT_FOUND);
   }
 
-  const subscriptionStartDate = new Date();
-  const subscriptionEndDate = new Date();
-  subscriptionEndDate.setDate(subscriptionStartDate.getDate() + packageCostDetails.validity);
+  // A plan that is still running is extended, so buying early never loses paid days.
+  const now = new Date();
+  const currentStudent = await getStudentById(data.studentId);
+  const plan = nextPlanWindow(currentStudent ?? {}, packageCostDetails.validity, now);
+  const subscriptionStartDate = plan.purchaseStart;
+  const subscriptionEndDate = plan.purchaseEnd;
 
   const paymentgatewayRepo = new PaymentgatewayRepo();
   const paymentgatewayDetail = await paymentgatewayRepo.findPaymentgatewayByName(
@@ -61,7 +66,7 @@ export const subscriptionUseCase = async (
     amount: packageCostDetails.price,
     paymentRef: data.paymentRef,
     comment: data.comment,
-    paymentDate: subscriptionStartDate,
+    paymentDate: now,
     status: data.status,
     deviceId: data.deviceId,
     userIP: data.userIP,
@@ -88,7 +93,7 @@ export const subscriptionUseCase = async (
   const studentData = {
     subscribed: true,
     packageId: data.packageId,
-    subscriptionStartDate: subscriptionStartDate,
+    subscriptionStartDate: plan.studentStart,
     subscriptionEndDate: subscriptionEndDate,
   };
   await updateStudentSubscription(data.studentId, studentData);
@@ -112,9 +117,12 @@ export const offlinePaymentUseCase = async (
     throw new AppError('No package cost found for the given packageCost ID', HttpStatus.NOT_FOUND);
   }
 
-  const subscriptionStartDate = new Date();
-  const subscriptionEndDate = new Date();
-  subscriptionEndDate.setDate(subscriptionStartDate.getDate() + packageCostDetails.validity);
+  // A plan that is still running is extended, so buying early never loses paid days.
+  const now = new Date();
+  const currentStudent = await getStudentById(data.studentId);
+  const plan = nextPlanWindow(currentStudent ?? {}, packageCostDetails.validity, now);
+  const subscriptionStartDate = plan.purchaseStart;
+  const subscriptionEndDate = plan.purchaseEnd;
 
   const paymentgatewayRepo = new PaymentgatewayRepo();
   const paymentgatewayDetail = await paymentgatewayRepo.findPaymentgatewayByName('offline');
@@ -161,7 +169,7 @@ export const offlinePaymentUseCase = async (
   const studentData = {
     subscribed: true,
     packageId: data.packageId,
-    subscriptionStartDate: subscriptionStartDate,
+    subscriptionStartDate: plan.studentStart,
     subscriptionEndDate: subscriptionEndDate,
   };
   await updateStudentSubscription(data.studentId, studentData);

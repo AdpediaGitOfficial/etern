@@ -17,6 +17,8 @@ import { validationResult } from 'express-validator';
 import asyncHandler from 'express-async-handler';
 import { IStudentBody, IEnrichedStudent } from '../../types/student/studentType';
 import ExcelJS from 'exceljs';
+import { getStudentSegmentCounts } from '../repos/studentRepo';
+import { getStudentJourney } from '../repos/journeyRepo';
 
 export const getStudentsByUserId = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -113,6 +115,9 @@ export const getStudents = async (req: Request, res: Response) => {
 
       expiresIn7Days: req.query.expiresIn7Days === 'true',
       isExpired: req.query.isExpired === 'true',
+      segment: ['active', 'expiring', 'lapsed', 'never'].includes(req.query.segment as string)
+        ? (req.query.segment as 'active' | 'expiring' | 'lapsed' | 'never')
+        : undefined,
     };
     const limit = parseInt(req.query.limit as string) || 10;
     const page = parseInt(req.query.page as string) || 1;
@@ -136,6 +141,21 @@ export const getStudents = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getStudentSegments = asyncHandler(async (_req: Request, res: Response) => {
+  const result = await getStudentSegmentCounts();
+  res.status(200).json({ success: true, message: responseMessages.response_success_get, result });
+});
+
+export const getStudentJourneyAdmin = asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(HttpStatus.BAD_REQUEST).json({ success: false, errors: errors.array() });
+    return;
+  }
+  const result = await getStudentJourney(req.params.id);
+  res.status(200).json({ success: true, message: responseMessages.response_success_get, result });
+});
 
 export const getStudentByIdAdmin = asyncHandler(async (req: Request, res: Response) => {
   const errors = validationResult(req);
