@@ -15,7 +15,7 @@ const NAV: Group[] = [
   { label: 'Online Payments', href: '/online-payments' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ expiringCount }: { expiringCount: number }) {
   const path = usePathname();
   return (
     <aside className="side" aria-label="Main navigation">
@@ -34,7 +34,7 @@ export default function Sidebar() {
                 <span className={'nav-item' + (n.items?.some(i => i.href) ? '' : ' off')}>{n.label}{n.items?.some(i => i.href) ? null : <em>Soon</em>}</span>
               )}
               {n.items?.map(i => i.href ? (
-                <Link key={i.label} href={i.href} className={'nav-sub' + (exact(i.href) ? ' on' : '')} aria-current={exact(i.href) ? 'page' : undefined}>{i.label}</Link>
+                <Link key={i.label} href={i.href} className={'nav-sub' + (exact(i.href) ? ' on' : '')} aria-current={exact(i.href) ? 'page' : undefined}>{i.label}{i.href === '/users/upcoming' && expiringCount > 0 ? <em className="nav-badge" aria-label={`${expiringCount} expiring`}>{expiringCount}</em> : null}</Link>
               ) : (
                 <span key={i.label} className="nav-sub off" aria-disabled="true">{i.label}</span>
               ))}

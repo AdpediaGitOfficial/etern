@@ -7,9 +7,26 @@ Moving the admin panel from Angular to Next.js. The Express API is unchanged.
 | 1 | Sign-in, dashboard | done |
 | 2 | Users (all / upcoming expiry / expired, detail), Offline payments (list, add, detail), Online payments (list, detail) | done |
 | 3 | Packages, categories, sub categories, course materials (list, add, edit, detail, delete) | done |
+| 4 | Enterprise dashboard extras: dark mode, ⌘K search, needs-attention panel, sparkline, summary export | done |
 
 Left out on purpose: the Angular users list had a **"Fixed OTP" button** that makes a student's OTP always `112233`.
 That is a standing login backdoor for the student's account, so it was not ported. Say if you need it.
+
+## Enterprise dashboard features
+- **Dark mode.** The sun/moon button switches themes. It follows the system setting until you choose, and the choice is stored in a cookie
+  so the server renders the right colours on the first paint (no flash, no inline script).
+- **Quick search (Ctrl/⌘ + K).** Jump to any page or action, or find a student by name or mobile number. Fully keyboard operable.
+- **Needs attention.** Expired subscriptions, subscriptions expiring within 7 days, sub categories under 40% completion and sub categories
+  without an image, each linking to the screen that fixes it. The "Upcoming Expiry" menu item shows the live count.
+- **Sparkline, summary export.** The subscribed card shows the daily trend; *Export summary* downloads every loaded panel as one CSV.
+  Exports neutralise spreadsheet formulas (CSV injection), because names in the data are editable by staff.
+- **Not built yet: date range and compare-with-previous-period.** The current API only returns "this month" and "last 10 days", so these
+  need new backend parameters first (see below).
+
+### Backend work needed for date range and compare
+`student/dashboard/subscriptions` is fixed to the last 10 days, and `user/userCount` and `subscription/revenueDetails` are fixed to the
+current month. To add a 7D / 30D / 90D / YTD picker, each of the three endpoints needs an optional `from` and `to`, defaulting to today's
+behaviour so the mobile app and Angular keep working. That requires a MongoDB integration test, which is why it is separate.
 
 ## How it works
 - The browser talks only to this Next.js server. Next calls the Express API server-to-server, so the API needs

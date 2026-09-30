@@ -1,16 +1,18 @@
+import Topbar from '@/components/Topbar';
+import { authedGet } from '@/lib/server';
+import type { Paged } from '@/lib/types';
 import Sidebar from './Sidebar';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // Badge on "Upcoming Expiry". If this small call fails, the badge is simply left out.
+  const expiring = await authedGet<Paged<unknown>>('student/allAdmin?page=1&limit=1&expiresIn7Days=true');
+  const expiringCount = expiring.ok ? expiring.data?.totalCount ?? 0 : 0;
+
   return (
     <div className="shell">
-      <Sidebar />
+      <Sidebar expiringCount={expiringCount} />
       <div className="shell-main">
-        <header className="topbar">
-          <span className="topbar-title">Admin</span>
-          <form action="/api/auth/logout" method="post">
-            <button type="submit" className="btn">Sign out</button>
-          </form>
-        </header>
+        <Topbar />
         <main className="content">{children}</main>
       </div>
     </div>

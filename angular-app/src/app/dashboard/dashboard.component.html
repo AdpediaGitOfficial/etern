@@ -96,7 +96,7 @@
                             <line [attr.x1]="plotLeft" [attr.x2]="plotEnd" [attr.y1]="y(t)" [attr.y2]="y(t)" class="grid-line"/>
                             <text [attr.x]="plotLeft - 8" [attr.y]="y(t) + 4" text-anchor="end">{{ t }}</text>
                         </ng-container>
-                        <text *ngFor="let i of labelIndexes" [attr.x]="x(i)" [attr.y]="chartH - 8" text-anchor="middle">{{ points[i].label | slice:5 }}</text>
+                        <text *ngFor="let i of labelIndexes" [attr.x]="x(i)" [attr.y]="chartH - 8" text-anchor="middle">{{ points[i].label }}</text>
                         <polygon [attr.points]="areaPoints" class="area"/>
                         <polyline [attr.points]="linePoints" class="line"/>
                         <ng-container *ngIf="hoverIndex !== null">

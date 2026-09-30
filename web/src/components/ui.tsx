@@ -75,3 +75,18 @@ export function ConfirmDialog({ open, title, body, confirmLabel, danger, busy, o
 export function Notice({ tone, children }: { tone: 'good' | 'bad'; children: ReactNode }) {
   return <div className={`banner ${tone}`} role={tone === 'bad' ? 'alert' : 'status'}>{children}</div>;
 }
+
+/** Shown inside a dashboard/list panel whose data failed to load. */
+export function PanelError({ onRetry, busy }: { onRetry: () => void; busy: boolean }) {
+  return (
+    <div className="err" role="alert">
+      <strong>We couldn’t load this.</strong>
+      <span>The server didn’t respond. Your data is safe.</span>
+      <button type="button" className="btn" onClick={onRetry} disabled={busy}>{busy ? 'Retrying…' : 'Try again'}</button>
+    </div>
+  );
+}
+
+export function Empty({ title, hint }: { title: string; hint: string }) {
+  return <div className="empty"><strong>{title}</strong><span>{hint}</span></div>;
+}
