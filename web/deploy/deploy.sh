@@ -7,7 +7,7 @@
 # If the new version does not become healthy, the running version is left untouched.
 set -euo pipefail
 
-BRANCH="${BRANCH:-feature/nextjs-modern-ui}"
+BRANCH="${BRANCH:-feature/nextjs-course-materials-ux}"
 REPO_DIR="${REPO_DIR:-$HOME/etern}"
 ENV_FILE="${ENV_FILE:-/etc/etern/web.env}"
 NAME="etern-admin"
