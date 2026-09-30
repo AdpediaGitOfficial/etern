@@ -215,7 +215,13 @@ export const getVideoDetailsUseCase = async () => {
       const completedPercentage =
         totalUniqueStudents > 0 ? (studentsCompleted / totalUniqueStudents) * 100 : 0;
 
+      const parentCategory =
+        typeof subCategory.categoryId === 'object' && subCategory.categoryId !== null
+          ? subCategory.categoryId
+          : null;
       return {
+        subCategoryId: String(subCategory._id),
+        categoryId: parentCategory ? String((parentCategory as unknown as { _id?: unknown })._id ?? '') : '',
         subCategoryName: subCategory.subCategoryName,
         subCategoryImageUrl: subCategory.imageUrl,
         categoryName:

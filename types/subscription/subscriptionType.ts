@@ -63,6 +63,10 @@ export interface ISubscriptionWithStudent extends ISubscription {
 }
 
 export interface IRevenueDetails {
+  /** Revenue for the period asked for. The current month when no range is sent. */
   currentMonthRevenue: number;
+  /** Change against the previous period of the same length (the previous month when no range is sent). */
   growthPercentage: number;
+  previousRevenue: number;
+  range: { from: string; to: string };
 }

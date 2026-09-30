@@ -41,12 +41,13 @@ import { processAndUploadImage } from '../../utils/imageUploader';
 import { createStudent, updateStudent } from '../../student/repos/studentRepo';
 import { IStudentBody } from '../../types/student/studentType';
 import { withAccess } from '../../subscription/accessRules';
+import { currentMonth, DateRange, dayKey } from '../../common/dateRange';
 import {
   findStudentExists,
   getStudentById,
   getStudentCount,
   getSubscribedStudentCount,
-  getCurrentMonthActivities,
+  getPeriodActivities,
 } from '../../student/repos/studentRepo';
 
 export const registerUserUseCase = async (
@@ -287,17 +288,19 @@ export const logoutUseCase = async (userId: string, deviceType: string): Promise
   return true;
 };
 
-export const getUserCountUseCase = async (): Promise<IUserCount> => {
+export const getUserCountUseCase = async (range?: DateRange | null): Promise<IUserCount> => {
+  const period = range ?? currentMonth();
   const totalUsers = await getStudentCount();
   const totalStudents = await getSubscribedStudentCount();
   const { registeredThisMonth, subscribedThisMonth, freeUsersThisMonth } =
-    await getCurrentMonthActivities();
+    await getPeriodActivities(period);
   return {
     totalUsers,
     totalStudents,
     registeredThisMonth,
     subscribedThisMonth,
     freeUsersThisMonth,
+    range: { from: dayKey(period.from), to: dayKey(period.to) },
   };
 };
 

@@ -27,6 +27,7 @@ import {
   IDobBody,
 } from '../../types/user/userTypes';
 import { HttpStatus } from '../../common/httpStatus';
+import { parseDateRange } from '../../common/dateRange';
 import { validationResult } from 'express-validator';
 import AppError from '../../common/appError';
 import ExcelJS from 'exceljs';
@@ -363,7 +364,11 @@ export const getUserCount = async (req: Request, res: Response) => {
     return;
   }
   try {
-    const result = await getUserCountUseCase();
+    const parsed = parseDateRange(req.query.from, req.query.to);
+    if (parsed.error) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: parsed.error });
+    }
+    const result = await getUserCountUseCase(parsed.range);
     return res.status(200).json({
       success: true,
       message: responseMessages.response_success_get,

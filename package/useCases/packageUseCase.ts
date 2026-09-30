@@ -49,13 +49,16 @@ export const updatePackageUseCase = async (
   const { packageCosts, ...packageDetails } = data;
   // Update package details
   const packageUpdateResult = await updatePackage(packageId, packageDetails);
-  // update packageCosts
-  const deletePackageCostResult = await deletePackageCost(packageId);
-  if (!deletePackageCostResult) {
-    throw new AppError('Failed to delete package cost', HttpStatus.INTERNAL_SERVER_ERROR);
-  }
-  if (packageCosts && packageCosts.length > 0) {
-    await savePackageCosts(packageId, packageCosts);
+  // Plans are replaced only when the request sends them. Leaving `packageCosts` out keeps the existing plans,
+  // so changing a name, description or status can no longer wipe the prices by accident.
+  if (Array.isArray(packageCosts)) {
+    const deletePackageCostResult = await deletePackageCost(packageId);
+    if (!deletePackageCostResult) {
+      throw new AppError('Failed to delete package cost', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    if (packageCosts.length > 0) {
+      await savePackageCosts(packageId, packageCosts);
+    }
   }
   return packageUpdateResult;
 };

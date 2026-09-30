@@ -44,6 +44,8 @@ export interface IStudentFilters {
   expiresIn7Days?: boolean;
   /** Group by plan state, worked out from the dates. */
   segment?: 'active' | 'expiring' | 'lapsed' | 'never' | 'free';
+  /** Only students who bought or renewed a plan in this period. */
+  subscribedRange?: { from: Date; to: Date };
 }
 
 export interface IEnrichedStudent extends IStudent {

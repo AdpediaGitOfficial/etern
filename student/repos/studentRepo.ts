@@ -15,6 +15,8 @@ import { ObjectID } from '../../utils/objectIdParser';
 import usersModel from '../../user/models/userModel';
 import mongoose from 'mongoose';
 import { EXPIRING_DAYS, freeVersionSettings, withAccess } from '../../subscription/accessRules';
+import { countPurchasesByDay, findBuyerIds } from '../../subscription/repos/subscriptionRepo';
+import { DateRange, dayKeys, lastDays, ordinalDay } from '../../common/dateRange';
 
 export const findStudentExists = async (
   studentId: string,
@@ -167,6 +169,12 @@ export const getAllStudents = async (
 
   if (filters.isExpired) {
     matchStage.subscriptionEndDate = { $lt: now };
+  }
+
+  // Students who bought or renewed a plan in a period (used by the dashboard's "subscribed" drill-down).
+  if (filters.subscribedRange) {
+    const buyers = await findBuyerIds(filters.subscribedRange);
+    matchStage._id = { $in: buyers.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id)) };
   }
 
   // Groups are worked out from the end date and never from the stored flag alone.
@@ -338,38 +346,20 @@ export const getStudentCount = async (): Promise<number> => {
   }
 };
 
-export const getCurrentMonthActivities = async (): Promise<{
-  registeredThisMonth: number;
-  subscribedThisMonth: number;
-  freeUsersThisMonth: number;
-}> => {
+/** New students, students who bought a plan, and new students still on the free version, for a period. */
+export const getPeriodActivities = async (
+  range: DateRange,
+): Promise<{ registeredThisMonth: number; subscribedThisMonth: number; freeUsersThisMonth: number }> => {
   try {
-    const currentDate = new Date();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDayOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
-
-    // Count students registered this month
-    const registeredThisMonth = await studentModel.countDocuments({
-      isDeleted: false,
-      createdAt: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
+    const joined = { isDeleted: false, createdAt: { $gte: range.from, $lte: range.to } };
+    const registeredThisMonth = await studentModel.countDocuments(joined);
+    // "Subscribed" counts students who bought or renewed a plan in the period, taken from the subscription records.
+    const subscribedThisMonth = (await findBuyerIds(range)).length;
+    // "Free" is the students who joined in the period and have no running plan now.
+    const freeUsersThisMonth = await studentModel.countDocuments({
+      ...joined,
+      $nor: [{ subscribed: true, subscriptionEndDate: { $gt: new Date() } }],
     });
-
-    // Count students subscribed this month
-    const subscribedThisMonth = await studentModel.countDocuments({
-      isDeleted: false,
-      subscribed: true,
-      subscriptionStartDate: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
-    });
-
-    const freeUsersThisMonth = registeredThisMonth - subscribedThisMonth;
     return { registeredThisMonth, subscribedThisMonth, freeUsersThisMonth };
   } catch (error) {
     throw new Error('Failed to fetch student counts');
@@ -403,66 +393,18 @@ export const checkStudentExist = async (studentId: string): Promise<{ _id: strin
   return await studentModel.findOne({ _id, isDeleted: false }).select({ _id: 1 }).lean();
 };
 
-export const getStudentSubscriptions = async (): Promise<
-  { subscription_date: string; total_subscriptions: number }[]
-> => {
+/** Plans bought per day. The last 10 days unless a range is given. Counted from the subscription records, so renewals count too. */
+export const getStudentSubscriptions = async (
+  range?: DateRange | null,
+): Promise<{ subscription_date: string; date: string; total_subscriptions: number }[]> => {
   try {
-    const formatDate = (date: Date): string => {
-      const day = date.getDate();
-      const suffix =
-        day === 1 || day === 21 || day === 31
-          ? 'st'
-          : day === 2 || day === 22
-            ? 'nd'
-            : day === 3 || day === 23
-              ? 'rd'
-              : 'th';
-      return `${day}${suffix}`;
-    };
-
-    // Generate last 10 days
-    const last10Days: { subscription_date: string; total_subscriptions: number }[] = Array.from(
-      { length: 10 },
-      (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - 9 + i);
-        return { subscription_date: formatDate(date), total_subscriptions: 0 };
-      },
-    );
-
-    const result: { _id: string; total_subscriptions: number }[] = await studentModel.aggregate([
-      {
-        $match: {
-          subscriptionStartDate: {
-            $gte: new Date(new Date().setDate(new Date().getDate() - 10)), // Last 10 days
-          },
-        },
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$subscriptionStartDate' } },
-          total_subscriptions: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { _id: 1 },
-      },
-    ]);
-
-    // Convert database result into a lookup object
-    const subscriptionData: Record<string, number> = result.reduce(
-      (acc, item) => {
-        const date = new Date(item._id);
-        acc[formatDate(date)] = item.total_subscriptions;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
-    // Merge database result with last 10 days data
-    return last10Days.map((day) => ({
-      subscription_date: day.subscription_date,
-      total_subscriptions: subscriptionData[day.subscription_date] || 0,
+    const period = range ?? lastDays(10);
+    const rows = await countPurchasesByDay(period);
+    const byDay = new Map(rows.map((row) => [row._id, row.total]));
+    return dayKeys(period).map((key) => ({
+      subscription_date: ordinalDay(key),
+      date: key,
+      total_subscriptions: byDay.get(key) ?? 0,
     }));
   } catch (error) {
     console.error('Error fetching student subscriptions:', error);

@@ -6,6 +6,7 @@ import {
 import paymentModel from '../models/paymentModel';
 import { IPaymentBody } from '../../types/subscription/paymentType';
 import { PaymentgatewayRepo } from '../../paymentgateway/repos/paymentgatewayRepo';
+import { currentMonth, DateRange, growthPercent, lastMonth } from '../../common/dateRange';
 
 export const subscribe = async (data: ISubscriptionBody): Promise<{ _id: string }> => {
   const subscription = await subscriptionModel.create(data);
@@ -88,56 +89,34 @@ export const findSubscriptionById = async (
     .lean();
 };
 
-export const getCurrentMonthRevenue = async (): Promise<number> => {
-  const now = new Date();
-  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
+/** Money received in a period: paid, not deleted, by payment date. */
+export const sumRevenue = async (from: Date, to: Date): Promise<number> => {
   const result = await paymentModel.aggregate([
-    {
-      $match: {
-        isDeleted: false,
-        status: 'paid',
-        paymentDate: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalRevenue: { $sum: '$amount' },
-      },
-    },
+    { $match: { isDeleted: false, status: 'paid', paymentDate: { $gte: from, $lte: to } } },
+    { $group: { _id: null, totalRevenue: { $sum: '$amount' } } },
   ]);
-
   return result.length > 0 ? result[0].totalRevenue : 0;
 };
 
-export const getGrowthPercentage = async (): Promise<number> => {
-  const currentMonthRevenue = await getCurrentMonthRevenue();
-  // Get the previous month's start and end dates
-  const now = new Date();
-  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+export const getCurrentMonthRevenue = async (): Promise<number> => {
+  const { from, to } = currentMonth();
+  return sumRevenue(from, to);
+};
 
-  const result = await paymentModel.aggregate([
-    {
-      $match: {
-        isDeleted: false,
-        status: 'paid',
-        paymentDate: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalRevenue: { $sum: '$amount' },
-      },
-    },
+export const getGrowthPercentage = async (): Promise<number> => {
+  const current = await sumRevenue(currentMonth().from, currentMonth().to);
+  const before = lastMonth();
+  return growthPercent(current, await sumRevenue(before.from, before.to));
+};
+
+/** Plans bought per day in a period, counted from the subscription records (renewals included). */
+export const countPurchasesByDay = async (range: DateRange): Promise<{ _id: string; total: number }[]> =>
+  subscriptionModel.aggregate([
+    { $match: { isDeleted: { $ne: true }, createdAt: { $gte: range.from, $lte: range.to } } },
+    { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, total: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
   ]);
 
-  const lastMonthRevenue = result.length > 0 ? result[0].totalRevenue : 0;
-  if (lastMonthRevenue === 0) return currentMonthRevenue > 0 ? 100 : 0;
-
-  const growthPercentage = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-  return parseFloat(growthPercentage.toFixed(2));
-};
+/** Students who bought a plan (or renewed) in a period. */
+export const findBuyerIds = async (range: DateRange): Promise<string[]> =>
+  (await subscriptionModel.distinct('studentId', { isDeleted: { $ne: true }, createdAt: { $gte: range.from, $lte: range.to } })).map(String);

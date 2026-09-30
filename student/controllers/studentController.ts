@@ -17,6 +17,7 @@ import { validationResult } from 'express-validator';
 import asyncHandler from 'express-async-handler';
 import { IStudentBody, IEnrichedStudent } from '../../types/student/studentType';
 import ExcelJS from 'exceljs';
+import { parseDateRange } from '../../common/dateRange';
 import { getStudentSegmentCounts } from '../repos/studentRepo';
 import { getStudentJourney } from '../repos/journeyRepo';
 
@@ -119,10 +120,15 @@ export const getStudents = async (req: Request, res: Response) => {
         ? (req.query.segment as 'active' | 'expiring' | 'lapsed' | 'never' | 'free')
         : undefined,
     };
+    const bought = parseDateRange(req.query.subscribedFrom, req.query.subscribedTo);
+    if (bought.error) {
+      return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: bought.error });
+    }
+    const listFilters = { ...filters, subscribedRange: bought.range ?? undefined };
     const limit = parseInt(req.query.limit as string) || 10;
     const page = parseInt(req.query.page as string) || 1;
 
-    const result = await getStudentsUseCase(filters, limit, page);
+    const result = await getStudentsUseCase(listFilters, limit, page);
     return res.status(200).json({
       success: true,
       message: 'Fetch users successfully',
@@ -263,7 +269,12 @@ export const studentSubscriptions = asyncHandler(async (req: Request, res: Respo
     });
     return;
   }
-  const result = await getStudentSubscriptionsUseCase();
+  const parsed = parseDateRange(req.query.from, req.query.to);
+  if (parsed.error) {
+    res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: parsed.error });
+    return;
+  }
+  const result = await getStudentSubscriptionsUseCase(parsed.range);
   res.status(200).json({
     success: true,
     message: responseMessages.response_success_get,

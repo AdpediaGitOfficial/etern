@@ -13,6 +13,7 @@ import {
 } from '../repos/studentRepo';
 import { IStudent, IStudentBody, StudentWithPayments } from '../../types/student/studentType';
 import { withAccess } from '../../subscription/accessRules';
+import { DateRange } from '../../common/dateRange';
 
 export const getStudentsByUserIdUseCase = async (userId: string): Promise<IStudent[]> => {
   const result = await findStudentsByUserId(userId);
@@ -40,11 +41,8 @@ export const getStudentsUseCase = async (
   limit: number,
   page: number,
 ): Promise<{ data: IStudent[]; totalCount: number }> => {
-  const result = await getAllStudents(filters, limit, page);
-  if (!result.data || result.data.length === 0) {
-    throw new AppError('No Users found', HttpStatus.NOT_FOUND);
-  }
-  return result;
+  // An empty list is a normal answer for a search or a filter, so it is returned as such and not as a 404.
+  return getAllStudents(filters, limit, page);
 };
 
 /*
@@ -66,8 +64,8 @@ export const getStudentByIdAdminUseCase = async (id: string): Promise<StudentWit
   return result; // ✅ return the student object directly
 };
 
-export const getStudentSubscriptionsUseCase = async () => {
-  const result = await getStudentSubscriptions();
+export const getStudentSubscriptionsUseCase = async (range?: DateRange | null) => {
+  const result = await getStudentSubscriptions(range);
   if (!result || result.length === 0) {
     throw new AppError('No chart data found', HttpStatus.NOT_FOUND);
   }

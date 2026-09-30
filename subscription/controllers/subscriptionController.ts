@@ -8,6 +8,7 @@ import {
 } from '../useCases/subscriptionUseCase';
 import { responseMessages } from '../../config/localization';
 import { HttpStatus } from '../../common/httpStatus';
+import { parseDateRange } from '../../common/dateRange';
 import { validationResult } from 'express-validator';
 import asyncHandler from 'express-async-handler';
 import {
@@ -97,7 +98,12 @@ export const getRevenueDetails = asyncHandler(async (req: Request, res: Response
     });
     return;
   }
-  const result = await getRevenueDetailsUseCase();
+  const parsed = parseDateRange(req.query.from, req.query.to);
+  if (parsed.error) {
+    res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: parsed.error });
+    return;
+  }
+  const result = await getRevenueDetailsUseCase(parsed.range);
   res.status(200).json({
     success: true,
     message: responseMessages.response_success_get,

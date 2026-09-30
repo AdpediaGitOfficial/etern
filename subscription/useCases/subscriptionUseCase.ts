@@ -5,9 +5,9 @@ import {
   findAllOfflinePayments,
   savePayment,
   findSubscriptionById,
-  getGrowthPercentage,
-  getCurrentMonthRevenue,
+  sumRevenue,
 } from '../repos/subscriptionRepo';
+import { currentMonth, DateRange, dayKey, growthPercent, lastMonth, previousRange } from '../../common/dateRange';
 import {
   ISubscription,
   ISubscriptionPaymentBody,
@@ -197,11 +197,15 @@ export const getSubscriptionByIdUseCase = async (
   return result;
 };
 
-export const getRevenueDetailsUseCase = async (): Promise<IRevenueDetails> => {
-  const currentMonthRevenue = await getCurrentMonthRevenue();
-  const growthPercentage = await getGrowthPercentage();
+export const getRevenueDetailsUseCase = async (range?: DateRange | null): Promise<IRevenueDetails> => {
+  const period = range ?? currentMonth();
+  const before = range ? previousRange(range) : lastMonth();
+  const currentMonthRevenue = await sumRevenue(period.from, period.to);
+  const previousRevenue = await sumRevenue(before.from, before.to);
   return {
     currentMonthRevenue,
-    growthPercentage,
+    growthPercentage: growthPercent(currentMonthRevenue, previousRevenue),
+    previousRevenue,
+    range: { from: dayKey(period.from), to: dayKey(period.to) },
   };
 };

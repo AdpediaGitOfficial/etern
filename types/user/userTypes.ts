@@ -92,4 +92,6 @@ export interface IUserCount {
   registeredThisMonth: number;
   subscribedThisMonth: number;
   freeUsersThisMonth: number;
+  /** The period the three "ThisMonth" numbers cover. The current month when no range is sent. */
+  range: { from: string; to: string };
 }
