@@ -88,3 +88,12 @@ describe('free version', () => {
     expect([...freeMaterialIds(m, 1)]).toEqual(['x']);
   });
 });
+
+describe('daysLeft rounding', () => {
+  it('counts a part day as a day left and only whole days as gone', () => {
+    const end = (h: number) => ({ subscriptionEndDate: new Date(now.getTime() + h * 3600000) });
+    expect(daysLeft(end(4.3 * 24), now)).toBe(5);    // shown as "5 days left"
+    expect(daysLeft(end(-12.3 * 24), now)).toBe(-12); // shown as "12 days since it ended"
+    expect(daysLeft(end(5 * 24), now)).toBe(5);
+  });
+});

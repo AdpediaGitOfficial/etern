@@ -26,6 +26,9 @@ describe('endsWhen', () => {
     expect(endsWhen(inDays(1), now)).toBe('in 1 day');
     expect(endsWhen(inDays(0), now)).toBe('today');
     expect(endsWhen(inDays(-12), now)).toBe('12 days ago');
+    // part of a day: "5 days left" beside "in 5 days", and 12 full days gone reads the same both ways
+    expect(endsWhen(new Date(now.getTime() + 4.3 * 86400000).toISOString(), now)).toBe('in 5 days');
+    expect(endsWhen(new Date(now.getTime() - 12.3 * 86400000).toISOString(), now)).toBe('12 days ago');
     expect(endsWhen(null, now)).toBe('');
   });
 });

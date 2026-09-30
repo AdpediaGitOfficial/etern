@@ -34,6 +34,7 @@ export interface JourneyInput {
 const t = (d: Date | string | null | undefined): number => (d ? new Date(d).getTime() : Number.NaN);
 const iso = (d: Date | string): string => new Date(d).toISOString();
 const inr = (n: number): string => `₹${Math.round(n).toLocaleString('en-IN')}`;
+const title = (s: string): string => (s ? s[0].toUpperCase() + s.slice(1) : s);
 const lengthOf = (start: Date | string, end: Date | string): string => {
   const days = Math.round((t(end) - t(start)) / 86400000);
   if (days >= 365 && days % 365 === 0) return `${days / 365} year${days === 365 ? '' : 's'}`;
@@ -51,7 +52,7 @@ export function buildTimeline(input: JourneyInput): JourneyEvent[] {
   purchases.forEach((p, i) => {
     events.push({
       at: iso(p.boughtAt), kind: 'paid', title: `${i === 0 ? 'Subscribed to' : 'Renewed'} ${p.packageName}, ${lengthOf(p.start, p.end)}`,
-      detail: `${inr(p.amount)} paid ${p.mode.toLowerCase() === 'offline' ? 'offline' : `by ${p.mode}`}. Runs to ${new Date(p.end).toISOString().slice(0, 10)}.`,
+      detail: `${inr(p.amount)} paid ${p.mode.toLowerCase() === 'offline' ? 'offline' : `by ${title(p.mode)}`}. Runs to ${new Date(p.end).toISOString().slice(0, 10)}.`,
     });
   });
   const last = purchases.reduce<JourneyPurchase | null>((m, p) => (!m || t(p.end) > t(m.end) ? p : m), null);

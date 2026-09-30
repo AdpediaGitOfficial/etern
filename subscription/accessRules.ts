@@ -32,12 +32,15 @@ export function hasActivePlan(s: PlanFields, now: Date = new Date()): boolean {
   return s.subscribed === true && end !== null && end > now.getTime();
 }
 
-/** Days left on a running plan (rounded up), or a negative number of days since it ended. Null when there never was a plan. */
+/**
+ * Days left on a running plan, or a negative number of days since it ended. Null when there never was a plan.
+ * Rounded one way for both: part of a day still counts as a day left, and only whole days count as gone,
+ * so "5 days left" and "12 days ago" never disagree with the date shown beside them.
+ */
 export function daysLeft(s: PlanFields, now: Date = new Date()): number | null {
   const end = time(s.subscriptionEndDate);
   if (end === null) return null;
-  const diff = (end - now.getTime()) / DAY_MS;
-  return diff > 0 ? Math.ceil(diff) : Math.floor(diff);
+  return Math.ceil((end - now.getTime()) / DAY_MS);
 }
 
 export function accessStatus(s: PlanFields, now: Date = new Date()): AccessStatus {

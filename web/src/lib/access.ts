@@ -20,7 +20,8 @@ export function statusOf(s: Planish, now: Date = new Date()): AccessStatus {
 /** "in 5 days", "today", "12 days ago" for a plan end date. */
 export function endsWhen(end: string | null | undefined, now: Date = new Date()): string {
   if (!end) return '';
-  const days = Math.round((new Date(end).getTime() - now.getTime()) / 86400000);
+  // Rounded the same way as the backend's daysLeft, so the two never disagree on the same screen.
+  const days = Math.ceil((new Date(end).getTime() - now.getTime()) / 86400000);
   if (days === 0) return 'today';
   if (days > 0) return `in ${days} day${days === 1 ? '' : 's'}`;
   return `${-days} day${days === -1 ? '' : 's'} ago`;
