@@ -1,19 +1,17 @@
 'use client';
 
-import CatalogueList from '@/components/CatalogueList';
-import { kindLabel } from '@/lib/kind';
+import CatalogueBrowser from '@/components/CatalogueBrowser';
+import { categoryStatusForm } from '@/lib/catalogue';
 import type { CategoryRow } from '@/lib/types';
 
-export default function CategoriesList({ initial }: { initial: { rows: CategoryRow[]; total: number } | null }) {
+export default function CategoriesList({ initial, notice, assetBase }: { initial: { rows: CategoryRow[]; total: number } | null; notice?: string; assetBase: string }) {
   return (
-    <CatalogueList<CategoryRow>
-      noun="category" base="/categories" endpoint="category" listPath="category/all" serverPaged
-      nameOf={r => r.categoryName} initial={initial}
-      columns={[
-        { header: 'Category', cell: r => <strong>{r.categoryName}</strong> },
-        { header: 'Package', cell: r => r.packageId?.packageName ?? '—' },
-        { header: 'Type', cell: r => kindLabel(r.type) },
-      ]}
+    <CatalogueBrowser<CategoryRow>
+      noun="category" plural="categories" base="/categories" endpoint="category" listPath="category/all" nameParam="categoryName" typeFilter
+      nameOf={r => r.categoryName} subOf={r => r.description?.trim() || 'No description'}
+      parentHeader="Package" parentOf={r => r.packageId?.packageName ?? ''}
+      statusForm={categoryStatusForm} assetBase={assetBase} initial={initial} notice={notice}
+      panelExtra={r => [['Package', r.packageId?.packageName ?? '—']]}
     />
   );
 }

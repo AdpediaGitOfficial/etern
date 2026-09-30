@@ -3,7 +3,7 @@ import { assetBaseUrl } from '@/lib/config';
 import { firstOf, LoadProblem } from '@/lib/entityPage';
 import { authedGet } from '@/lib/server';
 import type { SubCategoryRow } from '@/lib/types';
-import SubCategoryForm from '../../SubCategoryForm';
+import CatalogueForm from '@/components/CatalogueForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ export default async function Edit({ params }: { params: Promise<{ id: string }>
     <div className="dash">
       <Breadcrumb items={[{ label: 'Sub categories', href: '/sub-categories' }, { label: s.subCategoryName, href: `/sub-categories/${s._id}` }, { label: 'Edit' }]} />
       <PageHead title="Edit sub category" />
-      <SubCategoryForm initial={s} assetBase={assetBaseUrl()} />
+      <CatalogueForm kind="subcategory" initial={s} assetBase={assetBaseUrl()} />
     </div>
   );
 }

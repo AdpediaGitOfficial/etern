@@ -12,6 +12,15 @@ Moving the admin panel from Angular to Next.js. The Express API is unchanged.
 Left out on purpose: the Angular users list had a **"Fixed OTP" button** that makes a student's OTP always `112233`.
 That is a standing login backdoor for the student's account, so it was not ported. Say if you need it.
 
+## Categories and sub categories
+
+Same layout as packages: a compact table with server-side search, status tabs (and a Kid/Parent filter for categories), an Active/Inactive switch with Undo, a details side panel, one two-step form with a live preview, and a details page with a student preview.
+
+- The backend needs every field on update, so the switch resends the whole record (never the image).
+- The backend uses the search word as a regular expression, so the browser escapes it first (`escapeRegex`).
+- A sub category's parent list loads after a type is chosen and shows only categories of that type.
+- Course materials still use the older list and form.
+
 ## Packages
 - The list is one line per package with its price, plans and an Active/Inactive switch; a row opens a details panel; a **⋯** menu offers
   View, Edit, Duplicate and Delete. Create/Edit is three steps with a live "what students will see" preview.
