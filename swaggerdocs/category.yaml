@@ -1,0 +1,339 @@
+swagger: '3.0.0'
+info:
+  title: Category Model API
+  description: API related to Category models
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/category/all:
+    get:
+      summary: Fetch All Categories
+      description: Endpoint to fetch all Categories
+      tags:
+        - Category Model
+      security:
+        - JWT: []
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Fetch all Categories successfully
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        categoryName:
+                          type: string
+                          example: "Kutty Stories"
+                        packageId:
+                          type: string
+                          example: "670d2fd920824883c3100257"
+                        description:
+                          type: string
+                          example: "Kutty Stories"
+                        imageUrl:
+                          type: string
+                          example: "upload/category/sample.jpg"
+                        isActive:
+                          type: boolean
+                          example: true
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: An error occurred
+
+  /api/category/by-package/{studentId}/{type}:
+    get:
+      summary: Fetch Categories by Package ID
+      description: Endpoint to fetch categories by a given Package ID
+      tags:
+        - Category Model
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: string
+            example: "670d2fd920824883c3100257"
+        - name: type
+          in: path
+          required: true
+          description: Type of the category
+          schema:
+            type: string
+            enum: ["kid", "parent"]
+            example: "kid"
+      security:
+        - JWT: []
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Fetch Categories by Package ID successfully
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        categoryName:
+                          type: string
+                          example: "Kutty Stories"
+                        packageId:
+                          type: string
+                          example: "670d2fd920824883c3100257"                        
+                        imageUrl:
+                          type: string
+                          example: "upload/category/sample.jpg"
+                        description:
+                          type: string
+                          example: "Kutty Stories"                        
+        404:
+          description: Categories not found for the given package
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No categories found for this package
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: An error occurred
+  /api/category/:
+    post:
+      summary: Create category
+      description: Endpoint to Create category
+      tags:
+        - Category Model
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoryName:
+                  type: string
+                  example: Kutty Stories
+                packageId:
+                  type: string
+                  example: "670d2fd920824883c3100257"  
+                description:
+                  type: string
+                  example: "Kutty Stories"
+                imageUrl:
+                  type: string
+                  example: "upload/category/sample.jpg"
+                isActive:
+                  type: boolean
+                  example: true                  
+                sorting:
+                  type: number
+                  example: 1
+                type:
+                  type: string
+                  enum:
+                    - kid
+                    - parent                            
+                  example: kid
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Create Data Successfully
+                  result:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 670d2fd920824883c3100257
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user
+
+  /api/category/{id}:
+    put:
+      summary: Update category
+      description: Endpoint to update category
+      tags:
+        - Category Model
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the category
+          schema:
+            type: string
+            example: "670d2fd920824883c3100257"      
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoryName:
+                  type: string
+                  example: Kutty Stories
+                packageId:
+                  type: string
+                  example: "670d2fd920824883c3100257"  
+                description:
+                  type: string
+                  example: "Kutty Stories"
+                imageUrl:
+                  type: string
+                  example: "upload/category/sample.jpg"
+                isActive:
+                  type: boolean
+                  example: true                  
+                sorting:
+                  type: number
+                  example: 1
+                type:
+                  type: string
+                  enum:
+                    - kid
+                    - parent                            
+                  example: kid
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Update Data Successfully
+                  result:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 670d2fd920824883c3100257
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user
+
+/api/category/{id}:
+  delete:
+    summary: Delete category
+    description: Endpoint to delete a category
+    tags:
+      - Category Model
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the category
+        schema:
+          type: string
+          example: "670d2fd920824883c3100257"
+    security:
+      - JWT: []
+    responses:
+      200:
+        description: Success response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: Deleted data successfully
+                result:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "670d2fd920824883c3100257"
+      401:
+        description: Unauthorized response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Unauthorized user
+
+
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: JWT Bearer token
