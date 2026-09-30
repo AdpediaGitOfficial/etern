@@ -85,6 +85,10 @@ that protects both routes (`release/2026-09-30-auth-fixes`), and keep the API re
 | `SESSION_HOURS` | Cookie lifetime, default 8. The API's own token does not expire, so this is the effective session length. |
 | `COOKIE_SECURE` | Defaults to `true` in production. Set `false` only when testing over plain http. |
 
+## Deploy on a single server (Docker + Caddy)
+`deploy/deploy.sh` builds the image, runs it on a spare port, checks `/api/health`, then swaps it in, and rolls back if anything fails.
+`deploy/Caddyfile.example` gives automatic HTTPS. First-time setup and the test checklist are in the project's deployment notes.
+
 ## Deploy on AWS (Node server, container)
 The `Dockerfile` builds a small standalone image that listens on port 3000.
 1. Build and push: `docker build -t etern-admin-web .`, then push to an **Amazon ECR** repository.
