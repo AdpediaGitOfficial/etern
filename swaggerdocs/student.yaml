@@ -1,0 +1,300 @@
+swagger: '3.0.0'
+info:
+  title: Student Model API
+  description: API related to Student models
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/student/all:
+    get:
+      summary: Fetch All students
+      description: Endpoint to fetch all students
+      tags:
+        - Student Model
+      security:
+        - JWT: []
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Fetch all Students successfully
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        studentName:
+                          type: string
+                          example: "Hamia"                      
+                        isActive:
+                          type: boolean
+                          example: true
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: An error occurred
+
+  /api/student/addStudent:
+    post:
+      summary: add student
+      description: Endpoint for add student
+      tags:
+        - Student Model
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: JohnDoe
+                dob:
+                  type: string
+                  format: date
+                  example: 2000-01-01
+                gender:
+                  type: string
+                  enum:
+                    - male
+                    - female
+                  example: male
+                userId:
+                  type: string
+                  format: string
+                  example: 672a643ce802f709436c1a3a
+                  nullable: false                 
+
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Update student successfully
+                  result:
+                    type: string
+                    example: ''
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user
+
+
+  /api/student/updateStudent/{studentId}:
+    put:
+      summary: update student
+      description: Endpoint for update student
+      tags:
+        - Student Model
+      security:
+        - JWT: []
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: string
+          description: ID of the student to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: JohnDoe
+                dob:
+                  type: string
+                  format: date
+                  example: 2000-01-01
+                gender:
+                  type: string
+                  enum:
+                    - male
+                    - female
+                  example: male
+                userId:
+                  type: string
+                  format: string
+                  example: 672a643ce802f709436c1a3a
+                  nullable: false                 
+
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Update student successfully
+                  result:
+                    type: string
+                    example: ''
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user
+
+
+                    
+/api/student/allAdmin:
+    get:
+      summary: Fetch students
+      description: Endpoint to fetch profiles based on filters
+      tags:
+        - Student Model      
+      parameters:
+        - name: studentId
+          in: query
+          required: false
+          description: The ID of the sttudent
+          schema:
+            type: string
+            example: "670d2fd920824883c3100257"
+        - name: fullName
+          in: query
+          required: false
+          description: Filter by the user's full name
+          schema:
+            type: string
+            example: "Juan123"
+        - name: isActive
+          in: query
+          required: false
+          description: Filter by the student isActive or not
+          schema:
+            type: boolean
+            example: true       
+        - name: subscribed
+          in: query
+          required: false
+          description: Filter by the user's subscription status (e.g., active or inactive)
+          schema:
+            type: boolean
+            example: true
+        - name: limit
+          in: query
+          required: false
+          description: The number of records to retrieve
+          schema:
+            type: integer
+            example: 10
+        - name: page
+          in: query
+          required: false
+          description: The page number for pagination
+          schema:
+            type: integer
+            example: 1
+      security:
+        - JWT: []
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Fetch users successfully
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId:
+                          type: string
+                          example: "670d2fd920824883c3100257"
+                        fullName:
+                          type: string
+                          example: "Juan123"
+                        mobileNumber:
+                          type: string
+                          example: "9933577890"
+                        status:
+                          type: integer
+                          example: 1
+                        subscriptionStatus:
+                          type: string
+                          example: "active"
+        404:
+          description: User not found for the given filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No users found matching the criteria
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: An error occurred
+
+
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: JWT Bearer token
