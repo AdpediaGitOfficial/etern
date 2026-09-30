@@ -14,8 +14,13 @@ export function Breadcrumb({ items }: { items: { label: string; href?: string }[
   );
 }
 
-export function PageHead({ title, children }: { title: string; children?: ReactNode }) {
-  return <div className="dash-head"><h1>{title}</h1><div className="head-actions">{children}</div></div>;
+export function PageHead({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {
+  return (
+    <div className="dash-head">
+      <div><h1>{title}</h1>{subtitle ? <p className="muted">{subtitle}</p> : null}</div>
+      <div className="head-actions">{children}</div>
+    </div>
+  );
 }
 
 export function Pill({ tone, children }: { tone: 'good' | 'bad' | 'warn' | 'off'; children: ReactNode }) {

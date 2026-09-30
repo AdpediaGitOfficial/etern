@@ -12,6 +12,15 @@ Moving the admin panel from Angular to Next.js. The Express API is unchanged.
 Left out on purpose: the Angular users list had a **"Fixed OTP" button** that makes a student's OTP always `112233`.
 That is a standing login backdoor for the student's account, so it was not ported. Say if you need it.
 
+## Packages
+- The list is one line per package with its price, plans and an Active/Inactive switch; a row opens a details panel; a **⋯** menu offers
+  View, Edit, Duplicate and Delete. Create/Edit is three steps with a live "what students will see" preview.
+- **No sale dates.** A subscription starts the day a plan is given to a student and ends `validity` days later
+  (`subscriptionUseCase.ts`). The old "sold from / until" dates were never read by the backend, so they are no longer collected or sent.
+- **Backend behaviour to know about:** `PUT /api/package/:id` deletes ALL of a package's plans and recreates them (with new ids), and deletes
+  them if none are sent. The switch and the edit form therefore always resend every plan (`statusPayload` in `src/lib/packages.ts`, unit-tested).
+  Making the backend replace plans only when they are sent would be a safer long-term fix.
+
 ## Modern UI and drill-down
 - **Every metric is clickable.** The four KPI cards open a details panel: revenue shows the latest online and offline payments, registered and
   subscribed students show real student lists, and conversion shows the breakdown. Each panel links into the full list.

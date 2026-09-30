@@ -68,8 +68,9 @@ export class PackageEditComponent implements OnInit {
             //costGroup.patchValue(cost);
             costGroup.patchValue({
               ...cost,
-              from: cost.from.split('T')[0],
-              to: cost.to.split('T')[0],    
+              // New packages are saved without sale dates, so these can be missing.
+              from: cost.from ? cost.from.split('T')[0] : '',
+              to: cost.to ? cost.to.split('T')[0] : '',
             });
             this.packageCosts.push(costGroup);
           });

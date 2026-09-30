@@ -14,7 +14,7 @@ export default async function Edit({ params }: { params: Promise<{ id: string }>
   return (
     <div className="dash">
       <Breadcrumb items={[{ label: 'Packages', href: '/packages' }, { label: p.packageName, href: `/packages/${p._id}` }, { label: 'Edit' }]} />
-      <PageHead title="Edit package" />
+      <PageHead title="Edit package" subtitle="Changes apply to new subscriptions. Existing students keep their current plan." />
       <PackageForm initial={p} />
     </div>
   );
