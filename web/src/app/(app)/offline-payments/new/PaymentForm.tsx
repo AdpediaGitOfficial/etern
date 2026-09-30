@@ -18,7 +18,8 @@ export default function PaymentForm({ studentId, studentName }: { studentId: str
   const [pkgId, setPkgId] = useState('');
   const [costId, setCostId] = useState('');
   const [ref, setRef] = useState('');
-  const [date, setDate] = useState('');
+  // Most payments are recorded on the day they arrive, so the field starts on today and can be changed.
+  const [date, setDate] = useState(today);
   const [amount, setAmount] = useState('');
   const [remarks, setRemarks] = useState('');
   const [file, setFile] = useState<File | null>(null);
