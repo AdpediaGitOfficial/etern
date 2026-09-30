@@ -1,0 +1,143 @@
+<nz-card>
+    <nz-breadcrumb class="mb-4">
+      <nz-breadcrumb-item>
+        <a [routerLink]="'/dashboard/home'">
+          <i nz-icon nzType="home" theme="outline"></i>
+          <span>Home</span>
+        </a>
+      </nz-breadcrumb-item>
+      <nz-breadcrumb-item>
+        <a [routerLink]="'/admin/users'">
+          <span>Users</span>
+        </a>
+      </nz-breadcrumb-item>
+      <nz-breadcrumb-item>User Details</nz-breadcrumb-item>
+    </nz-breadcrumb>
+   
+    <nz-card nzTitle="User Details" class="shadow-sm p-3 rounded-card">
+        <div class="row align-items-center">
+          <!-- Avatar Section -->
+          <div class="col-md-4 text-center">
+            <nz-avatar class="shadow-sm m-v-15" [nzSize]="150" [nzSrc]="imagePreviewUrl"></nz-avatar>
+          </div>
+      
+          <!-- User Details Section -->
+          <div class="col-md-8">
+            <h2 class="m-b-5 font-weight-bold">
+              <i nz-icon nzType="user" nzTheme="outline" class="mr-2 text-primary"></i>
+              {{ dislayDetails.fullName }}
+            </h2>
+            <p class="text-opacity font-size-13">
+              <i nz-icon nzType="calendar" nzTheme="outline" class="mr-2 text-secondary"></i>
+              Age: {{ age }}
+            </p>
+            <p class="text-dark m-b-20">
+              <i nz-icon nzType="phone" nzTheme="outline" class="mr-2 text-success"></i>
+              {{ dislayDetails.userId.mobileNumber }}
+            </p>
+            <p class="text-dark m-b-20">
+              <i nz-icon nzType="mail" nzTheme="outline" class="mr-2 text-warning"></i>
+              {{ dislayDetails.userId.email }}
+            </p>
+          </div>
+        </div>
+      
+        <table class="product-info-table m-t-20">
+            <tbody>
+                <tr>
+                    <td>Date of Birth:</td>
+                    <td class="text-dark font-weight-semibold">{{ dislayDetails.dob | date: 'dd/MM/yyyy' }}</td>
+                </tr> 
+                <tr>
+                    <td>Parent Name:</td>
+                    <td class="text-dark font-weight-semibold">{{ dislayDetails.userId.fullName }}</td>
+                </tr> 
+                <tr>
+                  <td>Subscription:</td>
+                  <td>
+                    <nz-tag [nzColor]="dislayDetails.subscribed ? 'green' : 'red'">
+                      {{ dislayDetails.subscribed ? 'Subscribed' : 'Free User' }}
+                    </nz-tag>
+                  </td>
+                </tr>
+                <tr *ngIf="dislayDetails.subscriptionStartDate">
+                  <td>Subscription Start Date:</td>
+                  <td class="text-dark font-weight-semibold">
+                    {{ dislayDetails.subscriptionStartDate | date: 'dd/MM/yyyy' }}
+                  </td>
+                </tr>
+                <tr *ngIf="dislayDetails.subscriptionEndDate">
+                  <td>Subscription End Date:</td>
+                  <td class="text-dark font-weight-semibold">
+                    {{ dislayDetails.subscriptionEndDate | date: 'dd/MM/yyyy' }}
+                  </td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td>
+                        <nz-tag [nzColor]="dislayDetails.isActive ? 'green' : 'red'">
+                            {{ dislayDetails.isActive ? 'Active' : 'Inactive' }}
+                        </nz-tag>
+                    </td>
+                </tr>
+            </tbody>
+        </table> 
+    </nz-card> 
+      
+    <nz-card nzTitle="Payments" class="shadow-sm mt-4"  [nzExtra]="offlinePaymentButtonTemplate" >
+      <nz-table
+        [nzData]="dislayDetails.payments"
+        [nzBordered]="true"
+        [nzSize]="'middle'"
+        [nzShowPagination]="false"
+        [nzNoResult]="'No payments found.'"
+        class="payment-table"
+      >
+        <thead>
+          <tr>
+            <th class="text-center">#</th>
+            <th>Amount</th>
+            <th>Payment Date</th>
+          </tr>
+        </thead>
+    
+        <tbody>
+          <tr *ngFor="let payment of dislayDetails.payments; index as i">
+            <td class="text-center">{{ i + 1 }}</td>
+            <td class="amount-cell">₹ {{ payment.amount | number }}</td>
+            <td>{{ payment.paymentDate | date: 'dd/MM/yyyy' }}</td>
+          </tr>
+        </tbody>
+      </nz-table>
+    </nz-card>
+
+    <ng-template #offlinePaymentButtonTemplate>
+      <a
+        *ngIf="showOfflinePaymentButton"
+        class="m-r-5"
+        nz-button
+        nzType="primary"
+        nz-tooltip
+        nzTooltipTitle="Offline Payment"
+        [routerLink]="['/admin/offlinepayment-add', dislayDetails._id, dislayDetails.fullName]"
+      >
+        <i nz-icon nzType="wallet" theme="outline"></i> Do Payment
+      </a>
+    </ng-template>
+
+    <div class="text-end m-t-20">
+      <button
+        nz-button
+        nzType="primary"
+        [routerLink]="'/admin/users'"
+        title="Back to List"
+      >
+        Back
+      </button>
+    </div>
+  </nz-card>
+  
+
+
+
+

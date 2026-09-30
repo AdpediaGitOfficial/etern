@@ -1,0 +1,247 @@
+<div class="row">
+    <div class="col-md-6 col-lg-3">
+        <nz-card>
+            <div class="media align-items-center">
+                <nz-avatar [nzSize]="60" nzIcon="account-book" class="ant-avatar-blue"  ></nz-avatar>
+                <div class="m-l-15">
+                    <h2 class="m-b-0">₹{{currentMonthRevenue}}</h2> 
+                    <p class="m-b-0 text-muted">Current Month Revenue</p>
+                </div>
+            </div>
+        </nz-card>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <nz-card>
+            <div class="media align-items-center">
+                <nz-avatar [nzSize]="50" nzIcon="line-chart" class="ant-avatar-cyan"  ></nz-avatar>
+                <div class="m-l-15">
+                    <h2 class="m-b-0">{{growthPercentage}}%</h2>
+                    <p class="m-b-0 text-muted">Growth Percentage</p>
+                </div>
+            </div>
+        </nz-card>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <nz-card>
+            <div class="media align-items-center">
+                <nz-avatar [nzSize]="50" nzIcon="user" class="ant-avatar-gold"  ></nz-avatar>
+                <div class="m-l-15">
+                    <h2 class="m-b-0">{{totalUsers}}</h2>
+                    <p class="m-b-0 text-muted">Total Registered Students</p>
+                </div>
+            </div>
+        </nz-card>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <nz-card>
+            <div class="media align-items-center">
+                <nz-avatar [nzSize]="50" nzIcon="profile" class="ant-avatar-purple"  ></nz-avatar>
+                <div class="m-l-15">
+                    <h2 class="m-b-0">{{totalStudents}}</h2> 
+                    <p class="m-b-0 text-muted">Total Subscribed Students</p>
+                </div>
+            </div>
+        </nz-card>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 col-lg-8">    
+        <nz-card>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5>Students Subscribed in Current Month</h5>
+                <!--
+                <div>
+                    <nz-radio-group [(ngModel)]="revenueChartFormat">
+                        <label nz-radio-button nzValue="revenueMonth">Month</label>
+                        <label nz-radio-button nzValue="revenueYear">Year</label>
+                    </nz-radio-group>
+                </div>
+                -->
+            </div>
+            <div class="m-t-50" style="height: 330px">
+                <canvas ngChartjs 
+                    [datasets]="revenueChartData" 
+                    [labels]="revenueChartLabels"
+                    [options]="revenueChartOptions" 
+                    [colors]="revenueChartColors" 
+                    [legend]="false"
+                    [chartType]="revenueChartType">
+                </canvas>
+            </div>
+        </nz-card>
+    </div>
+    <div class="col-md-12 col-lg-4">
+        <nz-card>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Activity This Month</h5>
+                <!--
+                <div>
+                    <a nz-button nzSize="small">View All</a> 
+                </div>
+                -->
+            </div>
+            <div class="m-t-30">
+                <div class="d-flex m-b-20">
+                    <div class="text-center">
+                        <nz-avatar nzText="{{registeredThisMonth}}" class="ant-avatar-blue font-size-20" nzShape="square" nzSize="large"></nz-avatar>
+                    </div>
+                    <div class="m-l-20">
+                        <h5 class="m-b-0">
+                            <a class="text-dark">Total New Registrations </a>
+                        </h5>
+                        <p class="m-b-0">Total Students Registered in Current Month</p>
+                    </div>
+                </div>
+                <div class="d-flex m-b-20">
+                    <div class="text-center">
+                        <nz-avatar nzText="{{subscribedThisMonth}}" class="ant-avatar-cyan font-size-20" nzShape="square" nzSize="large"></nz-avatar>
+                    </div>
+                    <div class="m-l-20">
+                        <h5 class="m-b-0">
+                            <a class="text-dark">Subscribed Students</a>
+                        </h5>
+                        <p class="m-b-0">Total Subscribed Students in Current Month</p>
+                    </div>
+                </div>
+                <div class="d-flex">
+                    <div class="text-center">
+                        <nz-avatar nzText="{{freeUsersThisMonth}}" class="ant-avatar-gold font-size-20" nzShape="square" nzSize="large"></nz-avatar>
+                    </div>
+                    <div class="m-l-20">
+                        <h5 class="m-b-0">
+                            <a class="text-dark">Unsubscribed Students</a>
+                        </h5>
+                        <p class="m-b-0">Total Unsubscribed Students in Current Month</p>
+                    </div>
+                </div>
+            </div> 
+        </nz-card>
+    <!--
+        <nz-card>
+            <h5 class="m-b-0">Users</h5>
+            <div class="m-v-60 text-center" style="height: 200px">
+                <canvas ngChartjs 
+                    [data]="customersChartData" 
+                    [labels]="customersChartLabels" 
+                    [chartType]="customersChartType"
+                    [colors]="customersChartColors"
+                    [options]="customersChartOptions"
+                    [legend]="false">
+                </canvas>
+            </div>
+            <div class="row border-top p-t-25">
+                <div class="col-6">
+                    <div class="d-flex justify-content-center">
+                        <div class="media align-items-center">
+                            <nz-badge nzStatus="default" [nzColor]="cyan"></nz-badge>
+                            <div class="m-l-5">
+                                <h4 class="m-b-0">650</h4>
+                                <p class="m-b-0 muted">Subscribed Users</p>
+                            </div>    
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="d-flex justify-content-center">
+                        <div class="media align-items-center">
+                            <nz-badge nzStatus="default" [nzColor]="purple"></nz-badge>
+                            <div class="m-l-5">
+                                <h4 class="m-b-0">450</h4>
+                                <p class="m-b-0 muted">Free Users</p>
+                            </div>    
+                        </div>
+                    </div>
+                </div>               
+            </div>
+        </nz-card>
+        -->
+    </div>
+</div>
+<div class="row">    
+    <div class="col-md-12 col-lg-y">
+        <nz-card>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5>Videos</h5>
+                <!--
+                <div>
+                    <a nz-button nzType="default" nzSize="small">View All</a>
+                </div>
+                 -->
+            </div>
+            <div class="m-t-30">
+                <nz-table #productTable [nzData]="displayData" [nzShowPagination]="false" class="no-border-last">
+                    <thead>
+                        <tr>
+                            <th>Sub Category</th>
+                            <th>Total Videos</th>
+                            <th>Total Duration of Videos</th>
+                            <th>Students Viewed 100% of Videos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of productTable.data">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <nz-avatar nzShape="square"  nzIcon="picture"
+                                    [nzSrc]="apiUrl+ item.subCategoryImageUrl"></nz-avatar>
+                                    <span class="m-l-10">{{item.subCategoryName}} ({{item.categoryName}})</span>
+                                </div>
+                            </td>
+                            <td>{{item.totalCourseMaterials}}</td>
+                            <td>{{item.totalDuration }} Min.</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="w-90 p-r-10">
+                                        <nz-progress *ngIf="item.studentsCompletedPercentage > 60" [nzStrokeColor]="cyan" [nzPercent]="item.studentsCompletedPercentage" nzSize="small" [nzShowInfo]="false"></nz-progress>
+                                        <nz-progress *ngIf="item.studentsCompletedPercentage > 40 && item.studentsCompletedPercentage < 60" [nzStrokeColor]="gold" [nzPercent]="item.studentsCompletedPercentage" nzSize="small" [nzShowInfo]="false"></nz-progress>
+                                        <nz-progress *ngIf="item.studentsCompletedPercentage < 40" [nzStrokeColor]="red" [nzPercent]="item.studentsCompletedPercentage" nzSize="small" [nzShowInfo]="false"></nz-progress>
+                                    </div>
+                                    <span>{{item.studentsCompletedPercentage}}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </div>    
+</div>
+
+<div class="row">    
+    <div class="col-md-12 col-lg-y">
+        <nz-card>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5>Trending Videos</h5>
+                <!--
+                <div>
+                    <a nz-button nzType="default" nzSize="small">View All</a>
+                </div>
+                -->
+            </div>
+            <div class="m-t-30">
+                <nz-table #courseTable [nzData]="displayTrendingVideoData" [nzShowPagination]="false" class="no-border-last">
+                    <thead>
+                        <tr>
+                            <th>Course Material Name</th>
+                            <th>Sub Category</th>
+                            <th>Repeated Viewing</th>  
+                            <th>Distinct Students</th>  
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let item of courseTable.data">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="m-l-10">{{item.courseMaterialName}}</span>
+                                </div>
+                            </td>
+                            <td>{{item.subCategoryName}}</td>
+                            <td class="text-end">{{item.repeatedViews }}</td>   
+                            <td class="text-end">{{item.distinctStudents }}</td>                           
+                        </tr>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </div>    
+</div>
