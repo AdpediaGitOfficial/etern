@@ -120,3 +120,19 @@ export const countPurchasesByDay = async (range: DateRange): Promise<{ _id: stri
 /** Students who bought a plan (or renewed) in a period. */
 export const findBuyerIds = async (range: DateRange): Promise<string[]> =>
   (await subscriptionModel.distinct('studentId', { isDeleted: { $ne: true }, createdAt: { $gte: range.from, $lte: range.to } })).map(String);
+
+/** An earlier payment with the same gateway reference, so a retried request is not counted twice. */
+export const findPaymentByRef = async (paymentGatewayId: string, paymentRef: string): Promise<{ _id: string } | null> =>
+  (await paymentModel.findOne({ paymentGatewayId, paymentRef, isDeleted: false }).select({ _id: 1 }).lean()) as { _id: string } | null;
+
+export const findSubscriptionByPaymentId = async (paymentId: string): Promise<{ _id: string } | null> =>
+  (await subscriptionModel.findOne({ paymentId: String(paymentId), isDeleted: { $ne: true } }).select({ _id: 1 }).lean()) as { _id: string } | null;
+
+/** The same offline payment entered twice: same student, reference, amount and date. */
+export const findSameOfflinePayment = async (
+  studentId: string,
+  paymentRef: string,
+  amount: number,
+  paymentDate: Date,
+): Promise<{ _id: string } | null> =>
+  (await paymentModel.findOne({ studentId, paymentRef, amount, paymentDate, isDeleted: false }).select({ _id: 1 }).lean()) as { _id: string } | null;

@@ -6,6 +6,9 @@ import {
   savePayment,
   findSubscriptionById,
   sumRevenue,
+  findPaymentByRef,
+  findSubscriptionByPaymentId,
+  findSameOfflinePayment,
 } from '../repos/subscriptionRepo';
 import { currentMonth, DateRange, dayKey, growthPercent, lastMonth, previousRange } from '../../common/dateRange';
 import {
@@ -46,7 +49,7 @@ export const subscriptionUseCase = async (
   // A plan that is still running is extended, so buying early never loses paid days.
   const now = new Date();
   const currentStudent = await getStudentById(data.studentId);
-  const plan = nextPlanWindow(currentStudent ?? {}, packageCostDetails.validity, now);
+  const plan = nextPlanWindow(currentStudent ?? {}, packageCostDetails.validity, now, data.packageId);
   const subscriptionStartDate = plan.purchaseStart;
   const subscriptionEndDate = plan.purchaseEnd;
 
@@ -71,7 +74,13 @@ export const subscriptionUseCase = async (
     deviceId: data.deviceId,
     userIP: data.userIP,
   };
-  const paymentResult = await savePayment(paymentData);
+  // A retried request (double tap, app retry) must not add the days twice or count the money twice.
+  const earlier = await findPaymentByRef(paymentgatewayDetail._id, data.paymentRef);
+  if (earlier) {
+    const already = await findSubscriptionByPaymentId(earlier._id);
+    if (already) return { _id: already._id };
+  }
+  const paymentResult = earlier ?? (await savePayment(paymentData));
   if (!paymentResult) {
     throw new AppError('something went wrong while saving payment', HttpStatus.NOT_FOUND);
   }
@@ -120,7 +129,7 @@ export const offlinePaymentUseCase = async (
   // A plan that is still running is extended, so buying early never loses paid days.
   const now = new Date();
   const currentStudent = await getStudentById(data.studentId);
-  const plan = nextPlanWindow(currentStudent ?? {}, packageCostDetails.validity, now);
+  const plan = nextPlanWindow(currentStudent ?? {}, packageCostDetails.validity, now, data.packageId);
   const subscriptionStartDate = plan.purchaseStart;
   const subscriptionEndDate = plan.purchaseEnd;
 
@@ -128,6 +137,11 @@ export const offlinePaymentUseCase = async (
   const paymentgatewayDetail = await paymentgatewayRepo.findPaymentgatewayByName('offline');
   if (!paymentgatewayDetail) {
     throw new AppError('This payment gateway not found', HttpStatus.NOT_FOUND);
+  }
+
+  // The same offline payment entered twice (a double click) would add the days twice.
+  if (await findSameOfflinePayment(data.studentId, data.paymentRef, Number(data.amount), new Date(data.paymentDate))) {
+    throw new AppError('This payment was already recorded for the student.', HttpStatus.CONFLICT);
   }
 
   //Entry to payment collection

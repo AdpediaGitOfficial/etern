@@ -44,6 +44,16 @@ describe('renewing', () => {
     expect(Math.round((w.purchaseEnd.getTime() - now.getTime()) / 86400000)).toBe(375);
     expect(w.studentStart.getTime()).toBe(inDays(-355).getTime());
   });
+  it('buying a different package does not stack on the old one', () => {
+    const running = { subscribed: true, packageId: 'explorer', subscriptionStartDate: inDays(-100), subscriptionEndDate: inDays(265) };
+    const other = nextPlanWindow(running, 30, now, 'premium');
+    expect(other.extended).toBe(false);
+    expect(other.purchaseStart.getTime()).toBe(now.getTime());
+    expect(Math.round((other.purchaseEnd.getTime() - now.getTime()) / 86400000)).toBe(30);
+    const same = nextPlanWindow(running, 30, now, 'explorer');
+    expect(same.extended).toBe(true);
+    expect(Math.round((same.purchaseEnd.getTime() - now.getTime()) / 86400000)).toBe(295);
+  });
   it('buying after a plan ended starts today', () => {
     const w = nextPlanWindow({ subscribed: true, subscriptionEndDate: inDays(-3) }, 30, now);
     expect(w.extended).toBe(false);

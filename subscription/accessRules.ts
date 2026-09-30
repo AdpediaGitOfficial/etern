@@ -14,6 +14,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export type AccessStatus = 'subscribed' | 'expiring' | 'lapsed' | 'free';
 
 export interface PlanFields {
+  packageId?: string | null;
   subscribed?: boolean | null;
   subscriptionStartDate?: Date | string | null;
   subscriptionEndDate?: Date | string | null;
@@ -77,9 +78,13 @@ export interface PlanWindow {
   extended: boolean;
 }
 
-/** Dates for a purchase of `validityDays`. A running plan is extended, so no paid day is lost. */
-export function nextPlanWindow(s: PlanFields, validityDays: number, now: Date = new Date()): PlanWindow {
-  const active = hasActivePlan(s, now);
+/**
+ * Dates for a purchase of `validityDays`. A running plan is extended, so no paid day is lost, but only when the
+ * purchase is for the same package. Buying a different package starts from today, as it always did: stacking would
+ * give the new (possibly dearer) package for the days already paid on the old one.
+ */
+export function nextPlanWindow(s: PlanFields, validityDays: number, now: Date = new Date(), packageId?: string): PlanWindow {
+  const active = hasActivePlan(s, now) && (packageId === undefined || String(s.packageId ?? '') === String(packageId));
   const purchaseStart = active ? new Date(s.subscriptionEndDate as Date | string) : new Date(now.getTime());
   const original = time(s.subscriptionStartDate);
   return {
