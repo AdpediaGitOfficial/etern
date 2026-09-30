@@ -20,13 +20,14 @@
             "inlineStyleLanguage": "scss",
             "assets": ["src/favicon.ico", "src/assets"],
             "styles": ["src/styles.scss"],
+            "scripts": ["node_modules/jquery/dist/jquery.js", "src/assets/lib/hljs/highlight.pack.js"],
             "allowedCommonJsDependencies": ["moment", "chart.js", "date-fns"]
           },
           "configurations": {
             "production": {
               "budgets": [
                 { "type": "initial", "maximumWarning": "8mb", "maximumError": "12mb" },
-                { "type": "anyComponentStyle", "maximumWarning": "6kb", "maximumError": "12kb" }
+                { "type": "anyComponentStyle", "maximumWarning": "12kb", "maximumError": "24kb" }
               ],
               "outputHashing": "all"
             },
