@@ -59,7 +59,7 @@ router.post('/delete-account', authenticateUser, deleteAccount);
 //Admin apis
 router.post('/login', loginValidation, login);
 router.get('/all', authenticateAdmin, getUsers);
-router.post('/register-admin', adminRegisterValidation, registerAdmin);
+router.post('/register-admin', authenticateAdmin, adminRegisterValidation, registerAdmin);
 router.get('/userCount', authenticateAdmin, getUserCount);
 router.get('/export-users', authenticateAdmin, exportUsers);
 
