@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DURATIONS, draftFrom, durationLabel, emptyDraft, planSummary, statusPayload, toPayload, validateDraft } from './packages';
+import { AGE_PRESETS, DURATIONS, draftFrom, durationLabel, emptyDraft, planSummary, statusPayload, toPayload, validateDraft } from './packages';
 import type { PackageRow } from './types';
 
 const inr = (n: number) => `₹${n}`;
@@ -31,14 +31,21 @@ describe('planSummary', () => {
   });
 });
 
+describe('age presets', () => {
+  it('offers only 1–11 years, and new packages start on it', () => {
+    expect(AGE_PRESETS.map(a => [a.from, a.to, a.label])).toEqual([[1, 11, '1–11 years']]);
+    expect([emptyDraft().ageFrom, emptyDraft().ageTo]).toEqual(['1', '11']);
+  });
+});
+
 describe('validateDraft', () => {
   it('accepts a complete package', () => {
-    const d = { ...emptyDraft(), name: 'Champion', ageFrom: '9', ageTo: '12', plans: [{ price: '5999', days: '365' }] };
+    const d = { ...emptyDraft(), name: 'Champion', plans: [{ price: '5999', days: '365' }] };
     expect(validateDraft(d)).toEqual({});
   });
   it('flags each missing piece', () => {
     const e = validateDraft(emptyDraft());
-    expect(Object.keys(e).sort()).toEqual(['age', 'name', 'price0']);
+    expect(Object.keys(e).sort()).toEqual(['name', 'price0']); // ages start at 1–11
   });
   it('rejects a reversed age range and non-positive prices or days', () => {
     const e = validateDraft({ ...emptyDraft(), name: 'Okay', ageFrom: '9', ageTo: '5', plans: [{ price: '0', days: '0' }, { price: '10', days: '30' }] });

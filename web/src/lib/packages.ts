@@ -12,12 +12,7 @@ export const DURATIONS = [
   { days: 1825, label: '5 years' },
 ] as const;
 
-export const AGE_PRESETS = [
-  { from: 3, to: 5, label: '3–5 years' },
-  { from: 6, to: 8, label: '6–8 years' },
-  { from: 9, to: 12, label: '9–12 years' },
-  { from: 1, to: 18, label: 'All ages' },
-] as const;
+export const AGE_PRESETS = [{ from: 1, to: 11, label: '1–11 years' }] as const;
 
 /**
  * A plan's length in words. Plans are stored in days, and a subscription lasts exactly that many days from the day it is assigned,
@@ -47,7 +42,8 @@ export function planSummary(plans: Plan[] | undefined, money: (n: number) => str
 export interface PlanDraft { price: string; days: string }
 export interface PackageDraft { name: string; ageFrom: string; ageTo: string; description: string; active: boolean; plans: PlanDraft[] }
 
-export const emptyDraft = (): PackageDraft => ({ name: '', ageFrom: '', ageTo: '', description: '', active: true, plans: [{ price: '', days: '90' }] });
+/** New packages start with the standard 1–11 age group selected; it can be changed. */
+export const emptyDraft = (): PackageDraft => ({ name: '', ageFrom: '1', ageTo: '11', description: '', active: true, plans: [{ price: '', days: '90' }] });
 
 export function draftFrom(p: PackageRow, opts: { copy?: boolean } = {}): PackageDraft {
   return {
