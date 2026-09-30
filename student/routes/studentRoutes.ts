@@ -24,7 +24,7 @@ router.get('/all', authenticateUser, getStudentsByUserId);
 router.post('/addStudent', authenticateUser, studentAddValidation, addStudent);
 router.put('/updateStudent/:studentId', authenticateUser, studentUpdateValidation, updateStudent);
 //Admin panel Apis
-router.get('/allAdmin', getStudents);
+router.get('/allAdmin', authenticateAdmin, getStudents);
 router.get('/export-students', authenticateAdmin, exportStudent);
 router.get('/dashboard/subscriptions', authenticateAdmin, studentSubscriptions);
 router.get('/:id', authenticateAdmin, getStudentByIdAdmin);
