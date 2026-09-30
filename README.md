@@ -10,6 +10,17 @@ The old Angular dashboard is not on this branch. It stays on the `angular-files`
 
 Deploy the backend first, then the dashboard (the dashboard needs this backend release).
 
+### Build and run the backend
+```
+npm ci
+npm run build        # tsc (tsconfig.json) writes dist/, then copies utils/emailTemplate.html into dist/utils
+npm start            # node -r newrelic dist/index.js
+```
+- Keep a `.env` next to `package.json` (it is not in git).
+- Uploaded files live in `dist/upload` (`__dirname/upload` at run time). When you deploy into a new folder, link it to the existing uploads:
+  `ln -s /path/to/live/dist/upload dist/upload` (create `dist/` first, or run it after the first build).
+- Start it from the repo root, because the API docs are read from `./swaggerdocs/*.yaml`.
+
 ## Plans and the free version
 
 The rules live in `subscription/accessRules.ts` (pure functions, tested from `web/src/lib/accessRules.test.ts`).
