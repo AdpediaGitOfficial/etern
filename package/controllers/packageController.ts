@@ -52,7 +52,6 @@ export const createPackage = asyncHandler(async (req: Request, res: Response) =>
     });
     return;
   }
-  //  const data = req.body as IPackageBody;
   const data = req.body as IPackageBody & { packageCosts: IPackageCostBody[] };
 
   const result = await createPackageUseCase(data);

@@ -9,18 +9,6 @@ import { objectIdToString } from '../../utils/objectIdParser';
 import { ObjectId } from 'mongodb';
 import studentModel from '../../student/models/studentModel';
 
-/*
-export const checkUserExist = async (
-  email: string,
-  mobileNumber: number,
-): Promise<{ _id: string } | null> => {
-  return await usersModel
-    .findOne({ $or: [{ email }, { mobileNumber }] })
-    .select({ _id: 1 })
-    .lean();
-};
-*/
-
 export const checkUserExist = async (
   email: string | null,
   mobileNumber: number,

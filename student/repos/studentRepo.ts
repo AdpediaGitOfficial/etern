@@ -25,108 +25,6 @@ export const findStudentExists = async (
     .lean();
 };
 
-// export const findPackage = async (
-//   studentId: string,
-// ): Promise<{ packageId: string | null } | null> => {
-//   try {
-//     const student = await studentModel
-//       .findOne({ _id: new Types.ObjectId(studentId), isDeleted: false })
-//       .select({ packageId: 1, dob: 1, subscriptionEndDate: 1, subscribed: 1 })
-//       .lean();
-//     if (!student) return null;
-
-//     const now = new Date();
-
-//     const birthDate = new Date(student.dob);
-//     const currentDate = new Date();
-//     let age = currentDate.getFullYear() - birthDate.getFullYear();
-//     const monthDiff = currentDate.getMonth() - birthDate.getMonth();
-//     if (monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < birthDate.getDate())) {
-//       age--;
-//     }
-//     if (
-//       student.packageId &&
-//       student.subscribed &&
-//       student.subscriptionEndDate &&
-//       student.subscriptionEndDate > new Date()
-//     ) {
-//       return { packageId: student.packageId };
-//     }
-//     const matchingPackage = await packageModel
-//       .findOne({
-//         ageFrom: { $lte: age },
-//         ageTo: { $gte: age },
-//         isDeleted: false,
-//         isActive: true,
-//       })
-//       .select({ _id: 1 })
-//       .lean();
-
-//     return matchingPackage ? { packageId: matchingPackage._id.toString() } : null;
-//   } catch (error) {
-//     console.error('Error in findPackage:', error);
-//     throw error;
-//   }
-// };
-
-// export const findPackage = async (
-//   studentId: string,
-// ): Promise<{ packageId: string | null } | null> => {
-//   try {
-//     const student = await studentModel
-//       .findOne({ _id: new Types.ObjectId(studentId), isDeleted: false })
-//       .select({
-//         packageId: 1,
-//         dob: 1,
-//         subscribed: 1,
-//         subscriptionStartDate: 1,
-//         subscriptionEndDate: 1,
-//       })
-//       .lean();
-
-//     if (!student) return null;
-
-//     const now = new Date();
-
-//     // 🔹 Calculate age
-//     const birthDate = new Date(student.dob);
-//     let age = now.getFullYear() - birthDate.getFullYear();
-//     const monthDiff = now.getMonth() - birthDate.getMonth();
-//     if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) {
-//       age--;
-//     }
-
-//     // Check active subscription (START + END)
-//     const hasActiveSubscription =
-//       student.subscribed === true &&
-//       student.packageId &&
-//       student.subscriptionStartDate &&
-//       student.subscriptionEndDate &&
-//       new Date(student.subscriptionStartDate) <= now &&
-//       new Date(student.subscriptionEndDate) >= now;
-
-//     if (hasActiveSubscription) {
-//       return { packageId: student.packageId as string };
-//     }
-
-//     // Find package based on age
-//     const matchingPackage = await packageModel
-//       .findOne({
-//         ageFrom: { $lte: age },
-//         ageTo: { $gte: age },
-//         isDeleted: false,
-//         isActive: true,
-//       })
-//       .select({ _id: 1 })
-//       .lean();
-
-//     return matchingPackage ? { packageId: matchingPackage._id.toString() } : null;
-//   } catch (error) {
-//     console.error('Error in findPackage:', error);
-//     throw error;
-//   }
-// };
-
 export const findPackage = async (
   studentId: string,
 ): Promise<{ packageId: string | null } | null> => {
@@ -420,19 +318,6 @@ export const getCurrentMonthActivities = async (): Promise<{
   }
 };
 
-/*
-export const findStudentsById = async (id: string): Promise<IStudent[] | null> => {
-  return await studentModel
-    .findOne({ _id: id, isDeleted: false })
-    .populate({
-      path: 'userId',
-      select: 'fullName mobileNumber email',
-    })
-    
-    .lean();
-};
-*/
-
 export const findStudentsById = async (id: string): Promise<StudentWithPayments | null> => {
   const student = (await studentModel
     .findOne({ _id: id, isDeleted: false })
@@ -526,21 +411,6 @@ export const getStudentSubscriptions = async (): Promise<
     throw new Error('Database query failed');
   }
 };
-
-/*
-export const deleteStudent = async (id: string): Promise<{ _id: string }> => {
-  const result: any = await studentModel.findOneAndUpdate(
-    { _id: ObjectID(id) },
-    { isDeleted: true, modifiedOn: new Date().toISOString() },
-    { new: true },
-  );
-  if (!result) {
-    throw new AppError('No document found with the Id', HttpStatus.NOT_FOUND);
-  }
-  
-  return result;
-};
-*/
 
 export const deleteStudent = async (id: string): Promise<{ _id: string }> => {
   const student = await studentModel.findOne({ _id: new Types.ObjectId(id) });

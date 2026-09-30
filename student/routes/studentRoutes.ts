@@ -17,7 +17,6 @@ import {
   studentUpdateValidation,
   idValidation,
 } from '../requests/studentRequest';
-//import { getStudentById } from '../repos/studentRepo';
 
 const router = Router();
 router.get('/all', authenticateUser, getStudentsByUserId);

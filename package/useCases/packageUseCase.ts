@@ -11,7 +11,6 @@ import { savePackageCosts } from '../../packagecost/repos/packageCostRepo';
 
 export const getAllPackagesUseCase = async (): Promise<IPackage[]> => {
   const packageRepo = new PackageRepo();
-  //  const result = await packageRepo.findAllPackages();
   const result = await packageRepo.findAllPackagesWithCosts();
 
   if (!result) throw new AppError('No data found', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -29,13 +28,6 @@ export const getAllPackagesAdminUseCase = async (
   if (!result) throw new AppError('No data found', HttpStatus.INTERNAL_SERVER_ERROR);
   return result;
 };
-
-/*
-export const createPackageUseCase = async (data: IPackageBody): Promise<Pick<IPackage, '_id'>> => {
-  const result = await savePackage(data);
-  return result;
-};
-*/
 
 export const createPackageUseCase = async (
   data: IPackageBody & { packageCosts: IPackageCostBody[] },

@@ -2,7 +2,6 @@ import { generateToken } from '../../authentication/authentication';
 import AppError from '../../common/appError';
 import { HttpStatus } from '../../common/httpStatus';
 import { sendOtp } from '../../services/twilioService';
-//import { BrevoService } from '../../services/brevoService';
 
 import {
   IOtpBody,
@@ -24,7 +23,6 @@ import {
   updateUserOtp,
   getProfile,
   updateUser,
-  //checkMobileExist,
   getProfileById,
   getAllUsers,
   verifyLogin,
@@ -53,7 +51,6 @@ import {
 export const registerUserUseCase = async (
   data: IUserBody,
 ): Promise<{ _id: string; otp: string }> => {
-  //  export const registerUserUseCase = async (data: IUserBody): Promise<Pick<IUsers, '_id'>> => {
 
   const userExist = await checkUserExist(data.email ?? '', data.mobileNumber);
 
@@ -124,8 +121,6 @@ export const sendOtpUseCase = async (data: IOtpBody): Promise<string> => {
   const userExist = await checkUserNumberExist(data.mobileNumber, data.type);
   if (!userExist) throw new AppError('User Not Found', HttpStatus.BAD_REQUEST);
 
-  //const otp = '112233';
-
   let otp: string;
 
   const fixedOtpNumbers = [
@@ -148,11 +143,6 @@ export const sendOtpUseCase = async (data: IOtpBody): Promise<string> => {
     await sendOtp(data.mobileNumber, otp);
   }
 
-  /* OTP Email
-  const emailId = 'soniyaej@gmail.com';
-  const brevoService = new BrevoService();
-  await brevoService.sendEmail(emailId, 'Your OTP Code', `Your OTP is: ${otp}`);
-  */
   await updateUserOtp(data.mobileNumber, otp);
   return otp;
 };
@@ -226,7 +216,6 @@ export const loginUseCase = async (
   const check = await verifyLogin(email, password);
   if (!check) throw new AppError('Invalid Email/Password', HttpStatus.BAD_REQUEST);
   const token = generateToken({ role: 'admin', userId: check._id });
-  //await saveUserToken(otpCheck._id, deviceId, deviceType, token);
   const result = await getProfileById(check._id);
   if (!result) throw new AppError('User profile not found', HttpStatus.NOT_FOUND);
   return { token, ...result };
