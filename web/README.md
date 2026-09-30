@@ -1,8 +1,15 @@
 # Etern admin (Next.js)
 
-Phase 1 of the move from Angular: **sign-in and the redesigned dashboard**. The Express API is unchanged.
-The other admin screens (packages, categories, users, payments…) are still in `../angular-app` and are listed
-as "Soon" in the sidebar.
+Moving the admin panel from Angular to Next.js. The Express API is unchanged.
+
+| Phase | Screens | State |
+|---|---|---|
+| 1 | Sign-in, dashboard | done |
+| 2 | Users (all / upcoming expiry / expired, detail), Offline payments (list, add, detail), Online payments (list, detail) | done |
+| 3 | Packages, categories, sub categories, course materials | still in `../angular-app` (shown as "Soon") |
+
+Left out on purpose: the Angular users list had a **"Fixed OTP" button** that makes a student's OTP always `112233`.
+That is a standing login backdoor for the student's account, so it was not ported. Say if you need it.
 
 ## How it works
 - The browser talks only to this Next.js server. Next calls the Express API server-to-server, so the API needs
@@ -11,6 +18,8 @@ as "Soon" in the sidebar.
   **httpOnly, SameSite=Lax cookie**. JavaScript in the page never sees the token (the Angular app kept it in `localStorage`).
 - `middleware.ts` sends signed-out visitors to `/login`. If the API rejects the token (401/403) the user is signed out
   and returned to `/login?expired=1`.
+- The browser can only reach the API through `/api/proxy/*`, which forwards a fixed **allowlist** of endpoints and methods
+  (`src/lib/proxy.ts`), always with the session token. Anything else returns 404.
 - The dashboard loads the five existing endpoints in parallel on the server. One failing panel shows its own error and
   **Try again** button; the rest keep working. **Refresh** re-fetches through `/api/dashboard`.
 
