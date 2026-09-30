@@ -10,7 +10,7 @@ export default function CourseMaterialsList({ initial, notice, assetBase }: { in
   return (
     <CatalogueBrowser<CourseMaterialRow>
       noun="course material" plural="course materials" base="/course-materials" endpoint="coursematerial" listPath="coursematerial/all" nameParam="courseMaterialName"
-      typeFilter={false} searchable={false}
+      typeFilter serverEscapes
       nameOf={r => r.courseMaterialName} subOf={r => kindLabel(r.type)}
       parentHeader="Category › Sub category" parentOf={where}
       media={{ linkHeader: 'Video link', linkOf: r => r.courseMaterialUrl }}

@@ -30,6 +30,13 @@ describe('listQuery', () => {
   });
 });
 
+describe('listQuery with a backend that escapes', () => {
+  it('sends the search word as typed', () => {
+    const s = new URLSearchParams(listQuery({ ...base, escape: false, page: 1, q: 'a(b', tab: 'all' }));
+    expect(s.get('categoryName')).toBe('a(b');
+  });
+});
+
 describe('status forms', () => {
   it('keeps every field of a category and flips the status', () => {
     const c = { _id: '1', categoryName: 'Art', sorting: 3, type: 'kid', description: 'd', isActive: true, packageId: { _id: 'p', packageName: 'P' } } as CategoryRow;

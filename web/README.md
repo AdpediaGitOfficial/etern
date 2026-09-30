@@ -19,7 +19,7 @@ Same layout as packages: a compact table with server-side search, status tabs (a
 - The backend needs every field on update, so the switch resends the whole record (never the image).
 - The backend uses the search word as a regular expression, so the browser escapes it first (`escapeRegex`).
 - A sub category's parent list loads after a type is chosen and shows only categories of that type.
-- Course materials use the same design, plus a thumbnail and the video link (with Copy) in every row. Only http(s) links are clickable. The backend filters the name search on the wrong field (`subCategoryName`) and ignores `type`, so the list has status tabs but no search box.
+- Course materials use the same design, plus a thumbnail and the video link (with Copy) in every row. Only http(s) links are clickable. Search and the Kid/Parent filter work on the backend (`coursematerial/all`); the backend escapes the search word itself.
 
 ## Packages
 - The list is one line per package with its price, plans and an Active/Inactive switch; a row opens a details panel; a **⋯** menu offers

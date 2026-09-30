@@ -35,6 +35,8 @@ interface Props<T extends Row> {
   panelExtra?: (r: T) => [string, ReactNode][];
   /** The backend ignores search for some lists; then the search box is left out. Default true. */
   searchable?: boolean;
+  /** True when the backend already treats the search word as plain text (course materials). */
+  serverEscapes?: boolean;
   /** Media lists (course materials) show a thumbnail beside the name and the link in its own column. */
   media?: { linkHeader: string; linkOf: (r: T) => string };
 }
@@ -86,7 +88,7 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
     return () => clearTimeout(t);
   }, [q]);
 
-  const query = listQuery({ page, per: PER, q: term, tab, type, nameParam: p.nameParam, typeParam: p.typeFilter });
+  const query = listQuery({ page, per: PER, q: term, tab, type, nameParam: p.nameParam, typeParam: p.typeFilter, escape: !p.serverEscapes });
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);

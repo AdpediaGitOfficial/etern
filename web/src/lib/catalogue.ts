@@ -5,13 +5,13 @@ export const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/
 
 export type StatusTab = 'all' | 'on' | 'off';
 
-export interface ListQuery { page: number; per: number; q: string; tab: StatusTab; type?: '' | 'kid' | 'parent'; nameParam: string; typeParam: boolean }
+export interface ListQuery { page: number; per: number; q: string; tab: StatusTab; type?: '' | 'kid' | 'parent'; nameParam: string; typeParam: boolean; /** Escape the search word here. Off when the backend already does it. */ escape?: boolean }
 
 /** Builds the list query string: page, search word, status and (categories only) type. */
-export function listQuery({ page, per, q, tab, type, nameParam, typeParam }: ListQuery): string {
+export function listQuery({ page, per, q, tab, type, nameParam, typeParam, escape = true }: ListQuery): string {
   const p = new URLSearchParams({ page: String(page), limit: String(per) });
   const term = q.trim();
-  if (term) p.set(nameParam, escapeRegex(term));
+  if (term) p.set(nameParam, escape ? escapeRegex(term) : term);
   if (tab !== 'all') p.set('isActive', String(tab === 'on'));
   if (typeParam && type) p.set('type', type);
   return p.toString();

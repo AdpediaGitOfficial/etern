@@ -24,8 +24,13 @@ export class CourseMaterialRepo {
     page = 1,
   ): Promise<{ data: ICourseMaterial[]; totalCount: number }> {
     const query: any = {};
-    if (filters.courseMaterialName) {
-      query.subCategoryName = { $regex: filters.courseMaterialName, $options: 'i' };
+    if (filters.courseMaterialName && typeof filters.courseMaterialName === 'string') {
+      // Match on the material's own name, and treat the search word as plain text, not a pattern.
+      const term = filters.courseMaterialName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.courseMaterialName = { $regex: term, $options: 'i' };
+    }
+    if (filters.type === 'kid' || filters.type === 'parent') {
+      query.type = filters.type;
     }
     if (filters.isActive !== undefined) {
       query.isActive = filters.isActive;
