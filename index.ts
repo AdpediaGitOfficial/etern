@@ -27,7 +27,6 @@ connectToDatabase();
 //Newly added
 // Serve the upload folder statically
 app.use('/upload', express.static(path.join(__dirname, 'upload')));
-app.use('/upload', express.static(path.join(__dirname, 'upload')));
 dotenv.config();
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
