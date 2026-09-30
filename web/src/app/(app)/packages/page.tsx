@@ -7,7 +7,7 @@ import PackagesList from './PackagesList';
 
 export const dynamic = 'force-dynamic';
 
-const NOTICES: Record<string, string> = { created: 'Package created.', saved: 'Changes saved.' };
+const NOTICES: Record<string, string> = { created: 'Package created.', saved: 'Changes saved.', deleted: 'Package deleted.' };
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
   const { notice } = await searchParams;

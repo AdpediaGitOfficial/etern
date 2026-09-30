@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AGE_PRESETS, DURATIONS, draftFrom, durationLabel, emptyDraft, planSummary, statusPayload, toPayload, validateDraft } from './packages';
+import { AGE_PRESETS, bestValueIndex, DURATIONS, draftFrom, durationLabel, emptyDraft, perMonth, planSummary, statusPayload, toPayload, validateDraft } from './packages';
 import type { PackageRow } from './types';
 
 const inr = (n: number) => `₹${n}`;
@@ -88,5 +88,20 @@ describe('draftFrom', () => {
   });
   it('ignores legacy from/to dates, including missing ones', () => {
     expect(draftFrom(pkg()).plans.every(p => Object.keys(p).sort().join() === 'days,price')).toBe(true);
+  });
+});
+
+describe('perMonth / bestValueIndex', () => {
+  it('normalises a plan to a 30-day price', () => {
+    expect(perMonth({ price: 3000, validity: 30 })).toBe(3000);
+    expect(perMonth({ price: 3000, validity: 90 })).toBe(1000);
+    expect(perMonth({ price: 6000, validity: 365 })).toBeCloseTo(493.15, 1);
+    expect(perMonth({ price: 500, validity: 0 })).toBe(500); // never divide by zero
+  });
+  it('flags the cheapest plan per month only when there is a clear winner', () => {
+    expect(bestValueIndex([{ price: 1499, validity: 90 }, { price: 3999, validity: 365 }])).toBe(1);
+    expect(bestValueIndex([{ price: 1000, validity: 30 }, { price: 3000, validity: 90 }])).toBe(-1); // same per-month price
+    expect(bestValueIndex([{ price: 1000, validity: 30 }])).toBe(-1);
+    expect(bestValueIndex(undefined)).toBe(-1);
   });
 });

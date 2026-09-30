@@ -95,3 +95,15 @@ export function toPayload(d: PackageDraft) {
 export function statusPayload(p: PackageRow, isActive: boolean) {
   return toPayload({ ...draftFrom(p), active: isActive });
 }
+
+/** What a plan costs per 30 days, so plans of different lengths can be compared. */
+export const perMonth = (p: Plan): number => (p.validity > 0 ? p.price / (p.validity / 30) : p.price);
+
+/** Index of the cheapest plan per month, or -1 when there is nothing to compare (fewer than two plans, or a tie). */
+export function bestValueIndex(plans: Plan[] | undefined): number {
+  if (!plans || plans.length < 2) return -1;
+  const costs = plans.map(perMonth);
+  const best = Math.min(...costs);
+  const winners = costs.flatMap((c, i) => (Math.abs(c - best) < 0.005 ? [i] : []));
+  return winners.length === 1 ? winners[0] : -1;
+}
