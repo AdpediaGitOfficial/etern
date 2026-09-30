@@ -1,7 +1,8 @@
 import { Breadcrumb, PageHead } from '@/components/ui';
 import { isIsoDay } from '@/lib/dates';
 import { authedGet } from '@/lib/server';
-import type { Paged, Student } from '@/lib/types';
+import type { Paged, SegmentCounts, Student } from '@/lib/types';
+import { SEGMENTS, type Segment } from '@/lib/access';
 import UsersList, { type InitialFilters } from './UsersList';
 
 export const dynamic = 'force-dynamic';
@@ -14,22 +15,26 @@ function filtersFrom(sp: Record<string, string | string[] | undefined>): Initial
   const from = one(sp.from);
   const to = one(sp.to);
   const dates = isIsoDay(from) && isIsoDay(to) ? { from, to } : {};
-  return { q: one(sp.q)?.slice(0, 80) || undefined, subscription: triState(sp.subscription), status: triState(sp.status), ...dates };
+  // Older links use ?subscription=true|false. They map to the new groups.
+  const legacy = sp.subscription === 'true' ? 'active' : sp.subscription === 'false' ? 'free' : undefined;
+  const asked = one(sp.segment) ?? legacy;
+  const segment = SEGMENTS.includes(asked as Segment) ? (asked as Segment) : undefined;
+  return { q: one(sp.q)?.slice(0, 80) || undefined, segment, status: triState(sp.status), ...dates };
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const f = filtersFrom(await searchParams);
   const q = new URLSearchParams({ page: '1', limit: '10' });
   if (f.q) q.set('fullName', f.q);
-  if (f.subscription) q.set('subscribed', f.subscription);
+  if (f.segment) q.set('segment', f.segment);
   if (f.status) q.set('isActive', f.status);
   if (f.from && f.to) { q.set('startDate', f.from); q.set('endDate', f.to); }
-  const r = await authedGet<Paged<Student>>(`student/allAdmin?${q}`);
+  const [r, c] = await Promise.all([authedGet<Paged<Student>>(`student/allAdmin?${q}`), authedGet<SegmentCounts>('student/segments')]);
   return (
     <div className="dash">
       <Breadcrumb items={[{ label: 'Users' }]} />
       <PageHead title="Users" />
-      <UsersList filter="all" initial={r.ok ? r.data : null} initialFilters={f} />
+      <UsersList filter="all" initial={r.ok ? r.data : null} initialFilters={f} initialCounts={c.ok ? c.data : null} />
     </div>
   );
 }

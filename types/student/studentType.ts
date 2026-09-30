@@ -43,7 +43,7 @@ export interface IStudentFilters {
   isExpired?: boolean;
   expiresIn7Days?: boolean;
   /** Group by plan state, worked out from the dates. */
-  segment?: 'active' | 'expiring' | 'lapsed' | 'never';
+  segment?: 'active' | 'expiring' | 'lapsed' | 'never' | 'free';
 }
 
 export interface IEnrichedStudent extends IStudent {

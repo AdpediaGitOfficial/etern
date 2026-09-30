@@ -6,7 +6,7 @@ import UsersList from '../UsersList';
 export const dynamic = 'force-dynamic';
 
 export default async function Page() {
-  const q = new URLSearchParams({ page: '1', limit: '10', expiresIn7Days: 'true' });
+  const q = new URLSearchParams({ page: '1', limit: '10', segment: 'expiring' });
   const r = await authedGet<Paged<Student>>(`student/allAdmin?${q}`);
   return (
     <div className="dash">

@@ -115,8 +115,8 @@ export const getStudents = async (req: Request, res: Response) => {
 
       expiresIn7Days: req.query.expiresIn7Days === 'true',
       isExpired: req.query.isExpired === 'true',
-      segment: ['active', 'expiring', 'lapsed', 'never'].includes(req.query.segment as string)
-        ? (req.query.segment as 'active' | 'expiring' | 'lapsed' | 'never')
+      segment: ['active', 'expiring', 'lapsed', 'never', 'free'].includes(req.query.segment as string)
+        ? (req.query.segment as 'active' | 'expiring' | 'lapsed' | 'never' | 'free')
         : undefined,
     };
     const limit = parseInt(req.query.limit as string) || 10;

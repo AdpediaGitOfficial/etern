@@ -23,7 +23,7 @@ export function PageHead({ title, subtitle, children }: { title: string; subtitl
   );
 }
 
-export function Pill({ tone, children }: { tone: 'good' | 'bad' | 'warn' | 'off'; children: ReactNode }) {
+export function Pill({ tone, children }: { tone: 'good' | 'bad' | 'warn' | 'off' | 'lock'; children: ReactNode }) {
   return <span className={`pill ${tone}`}>{children}</span>;
 }
 

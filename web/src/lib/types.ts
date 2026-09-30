@@ -43,6 +43,10 @@ export interface Student {
   subscribed: boolean;
   subscriptionEndDate?: string | null;
   isActive: boolean;
+  /** Worked out by the backend from the dates. Older backends omit these; see lib/access.ts. */
+  accessStatus?: 'subscribed' | 'expiring' | 'lapsed' | 'free';
+  daysLeft?: number | null;
+  parentName?: string;
 }
 export interface StudentDetail extends Omit<Student, 'mobileNumber'> {
   dob?: string;
@@ -114,3 +118,17 @@ export interface CourseMaterialRow {
   isActive: boolean;
   subCategoryId: { _id: string; subCategoryName: string; categoryId: { _id: string; categoryName: string } };
 }
+
+export interface Journey {
+  student: { _id: string; fullName: string; dob?: string; gender: string; avatar: string; isActive: boolean; createdAt: string;
+    parent: { name: string; mobileNumber: number | string | null; email: string } };
+  access: { subscribed: boolean; accessStatus: 'subscribed' | 'expiring' | 'lapsed' | 'free'; isFreeVersion: boolean; daysLeft: number | null;
+    packageId: string; packageName: string; subscriptionStartDate: string | null; subscriptionEndDate: string | null;
+    freeVersion: { enabled: boolean; perSubCategory: number }; totalVideos: number; openVideos: number };
+  metrics: { videosViewed: number; videosViewedAllTime: number; completionPercent: number; activeDaysLast30: number; firstActivityAt: string | null; lastActivityAt: string | null };
+  learning: { categories: { categoryId: string; name: string; total: number; viewed: number; locked: number }[];
+    recent: { name: string; category: string; viewedAt: string; viewedPercentage: number | null; locked: boolean }[] };
+  subscriptions: { _id: string; packageName: string; start: string; end: string; boughtAt: string; amount: number; mode: string; recordedBy: string; state: 'running' | 'ended' | 'upcoming' }[];
+  timeline: { at: string; kind: 'joined' | 'learn' | 'paid' | 'ended' | 'warn' | 'now'; title: string; detail: string }[];
+}
+export interface SegmentCounts { all: number; active: number; expiring: number; lapsed: number; never: number }

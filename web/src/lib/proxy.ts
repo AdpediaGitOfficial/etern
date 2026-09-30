@@ -19,6 +19,8 @@ const ALLOWED: Rule[] = [
   // users
   rule('GET', 'student/allAdmin'),
   rule('GET', 'student/export-students'),
+  rule('GET', 'student/segments'),
+  rule('GET', `student/${ID}/journey`),
   rule('GET', `student/${ID}`),
   rule('DELETE', `student/${ID}`),
   rule('GET', `student/unsubscribe/${ID}`),

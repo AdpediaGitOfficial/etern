@@ -6,7 +6,7 @@ import Sidebar from './Sidebar';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Badge on "Upcoming Expiry". If this small call fails, the badge is simply left out.
-  const expiring = await authedGet<Paged<unknown>>('student/allAdmin?page=1&limit=1&expiresIn7Days=true');
+  const expiring = await authedGet<Paged<unknown>>('student/allAdmin?page=1&limit=1&segment=expiring');
   const expiringCount = expiring.ok ? expiring.data?.totalCount ?? 0 : 0;
 
   return (

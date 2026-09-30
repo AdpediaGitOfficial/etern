@@ -87,6 +87,7 @@ export default function PaymentForm({ studentId, studentName }: { studentId: str
   return (
     <form className="card form" onSubmit={onSubmit} noValidate>
       <p className="who">Recording a payment for <strong>{studentName}</strong></p>
+      <p className="hint">The plan starts today. If the student already has a running plan, the new days are added after it ends, so no paid day is lost. The student sees the change in the app straight away, without logging in again.</p>
       {submitError ? <Notice tone="bad">{submitError}</Notice> : null}
 
       <div className="f-grid">

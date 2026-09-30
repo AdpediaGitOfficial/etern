@@ -4,16 +4,32 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, Notice, Pager, Pill } from '@/components/ui';
 import { api, download } from '@/lib/api';
-import { fmtDate, isExpired } from '@/lib/format';
-import type { Paged, Student } from '@/lib/types';
+import { endsWhen, isRunning, STATUS_LABEL, STATUS_TONE, statusOf, type Segment } from '@/lib/access';
+import { fmtDate } from '@/lib/format';
+import type { Paged, SegmentCounts, Student } from '@/lib/types';
 
 type Filter = 'all' | 'upcoming' | 'expired';
-export interface InitialFilters { q?: string; subscription?: 'true' | 'false'; status?: 'true' | 'false'; from?: string; to?: string }
+export interface InitialFilters { q?: string; segment?: Segment; status?: 'true' | 'false'; from?: string; to?: string }
+const TABS: { key: Segment; label: string; count: keyof SegmentCounts }[] = [
+  { key: '', label: 'All', count: 'all' }, { key: 'active', label: 'Subscribed', count: 'active' }, { key: 'expiring', label: 'Expiring in 7 days', count: 'expiring' },
+  { key: 'lapsed', label: 'Free (plan ended)', count: 'lapsed' }, { key: 'never', label: 'Never subscribed', count: 'never' },
+];
+const NOTES: Record<string, string> = {
+  active: 'Students with a running plan. The ones that end within 7 days are also under “Expiring in 7 days”.',
+  expiring: 'Plans that end within 7 days. Ask these families to renew before their videos lock.',
+  lapsed: 'Plan ended, now on the free version. Progress is kept, and renewing unlocks every video again.',
+  never: 'Never bought a plan. They use the free version.',
+  free: 'Everyone on the free version.',
+};
 const PER = 10;
 
-export default function UsersList({ filter, initial, initialFilters = {} }: { filter: Filter; initial: Paged<Student> | null; initialFilters?: InitialFilters }) {
+const PRESET: Record<Filter, Segment> = { all: '', upcoming: 'expiring', expired: 'lapsed' };
+
+export default function UsersList({ filter, initial, initialFilters = {}, initialCounts = null }: { filter: Filter; initial: Paged<Student> | null; initialFilters?: InitialFilters; initialCounts?: SegmentCounts | null }) {
   const [q, setQ] = useState(initialFilters.q ?? '');
-  const [sub, setSub] = useState(initialFilters.subscription ?? 'All');
+  const [seg, setSeg] = useState<Segment>(PRESET[filter] || initialFilters.segment || '');
+  const [counts, setCounts] = useState<SegmentCounts | null>(initialCounts);
+  const [menu, setMenu] = useState<string | null>(null);
   const [status, setStatus] = useState(initialFilters.status ?? 'All');
   const [from, setFrom] = useState(initialFilters.from ?? '');
   const [to, setTo] = useState(initialFilters.to ?? '');
@@ -32,13 +48,24 @@ export default function UsersList({ filter, initial, initialFilters = {} }: { fi
     const p = new URLSearchParams();
     if (withPage) { p.set('page', String(page)); p.set('limit', String(PER)); }
     if (q.trim()) p.set('fullName', q.trim());
-    if (sub !== 'All') p.set('subscribed', sub);
+    if (seg) p.set('segment', seg);
     if (status !== 'All') p.set('isActive', status);
     if (from && to) { p.set('startDate', from); p.set('endDate', to); }
-    if (filter === 'upcoming') p.set('expiresIn7Days', 'true');
-    if (filter === 'expired') p.set('isExpired', 'true');
     return p.toString();
-  }, [page, q, sub, status, from, to, filter]);
+  }, [page, q, seg, status, from, to]);
+
+  const loadCounts = useCallback(async () => {
+    const r = await api<{ result?: SegmentCounts }>('student/segments');
+    if (r.ok && r.body?.result) setCounts(r.body.result);
+  }, []);
+  useEffect(() => { if (filter === 'all' && !initialCounts) loadCounts(); }, [filter, initialCounts, loadCounts]);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => { if (!(e.target as HTMLElement).closest('.kebab')) setMenu(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(null); };
+    document.addEventListener('click', close); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('click', close); document.removeEventListener('keydown', esc); };
+  }, [menu]);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -64,20 +91,20 @@ export default function UsersList({ filter, initial, initialFilters = {} }: { fi
   }, [load, q]);
 
   const changeFilter = (fn: () => void) => { fn(); setPage(1); };
-  const filtered = Boolean(q.trim()) || sub !== 'All' || status !== 'All' || Boolean(from && to);
+  const filtered = Boolean(q.trim()) || status !== 'All' || Boolean(from && to);
 
   // Keep the address in step with the filters, so a filtered list can be bookmarked or shared.
   useEffect(() => {
     const p = new URLSearchParams();
     if (q.trim()) p.set('q', q.trim());
-    if (sub !== 'All') p.set('subscription', sub);
+    if (seg && filter === 'all') p.set('segment', seg);
     if (status !== 'All') p.set('status', status);
     if (from && to) { p.set('from', from); p.set('to', to); }
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [q, sub, status, from, to]);
+  }, [q, seg, filter, status, from, to]);
 
-  function clearFilters() { setQ(''); setSub('All'); setStatus('All'); setFrom(''); setTo(''); setPage(1); }
+  function clearFilters() { setQ(''); setStatus('All'); setFrom(''); setTo(''); setPage(1); }
 
   async function runConfirm() {
     if (!confirm) return;
@@ -87,8 +114,9 @@ export default function UsersList({ filter, initial, initialFilters = {} }: { fi
     const r = await api(`student/${isDelete ? '' : 'unsubscribe/'}${s._id}`, { method: isDelete ? 'DELETE' : 'GET' },
       isDelete ? 'Could not delete the student.' : 'Could not unsubscribe the student.');
     if (r.ok) {
-      setNotice({ tone: 'good', text: isDelete ? `${s.fullName} was deleted.` : `${s.fullName} was unsubscribed.` });
+      setNotice({ tone: 'good', text: isDelete ? `${s.fullName} was deleted.` : `${s.fullName}’s plan was ended. They are now on the free version.` });
       await load();
+      loadCounts();
     } else {
       setNotice({ tone: 'bad', text: r.message });
     }
@@ -104,18 +132,25 @@ export default function UsersList({ filter, initial, initialFilters = {} }: { fi
   }
 
   return (
-    <div className="card">
-      {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
+    <div className="card flush">
+      {notice ? <div className="pad"><Notice tone={notice.tone}>{notice.text}</Notice></div> : null}
+      {filter === 'all' ? (
+        <div className="tools">
+          <div className="tabs" role="tablist" aria-label="Group of students">
+            {TABS.map(t => (
+              <button key={t.key} type="button" role="tab" aria-selected={seg === t.key} onClick={() => changeFilter(() => setSeg(t.key))}>
+                {t.label}{counts ? <em>{counts[t.count]}</em> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {seg && NOTES[seg] ? <div className="segnote">{NOTES[seg]}</div> : null}
       <div className="filters">
         <label>Search
           <input type="search" placeholder="Name or mobile number" value={q} onChange={e => changeFilter(() => setQ(e.target.value))} />
         </label>
-        <label>Subscription
-          <select value={sub} onChange={e => changeFilter(() => setSub(e.target.value))}>
-            <option value="All">All</option><option value="true">Subscribed</option><option value="false">Free user</option>
-          </select>
-        </label>
-        <label>Status
+        <label>Account
           <select value={status} onChange={e => changeFilter(() => setStatus(e.target.value))}>
             <option value="All">All</option><option value="true">Active</option><option value="false">Inactive</option>
           </select>
@@ -125,40 +160,46 @@ export default function UsersList({ filter, initial, initialFilters = {} }: { fi
         {filtered ? <button type="button" className="btn" onClick={clearFilters}>Clear filters</button> : null}
         <button type="button" className="btn export" onClick={exportXlsx} disabled={exporting}>{exporting ? 'Exporting…' : 'Export to Excel'}</button>
       </div>
-      {(from && !to) || (!from && to) ? <p className="hint">Pick both dates to filter by joining date.</p> : null}
+      {(from && !to) || (!from && to) ? <p className="hint pad">Pick both dates to filter by joining date.</p> : null}
 
-      <div className="tw" aria-busy={loading}>
-        <table className="tbl">
+      <div className="tw flat" aria-busy={loading}>
+        <table className="tbl pk users">
           <thead>
-            <tr><th>#</th><th>Joined</th><th>Student</th><th>Mobile</th><th>Type</th><th>Subscription ends</th><th>Status</th><th>Actions</th></tr>
+            <tr><th>Student</th><th>Plan</th><th>Plan ends</th><th>Joined</th><th className="narrow-col"><span className="sr-only">Actions</span></th></tr>
           </thead>
           <tbody className={loading ? 'dim' : ''}>
-            {rows.map((s, i) => {
-              const exp = isExpired(s.subscriptionEndDate);
+            {rows.map(s => {
+              const st = statusOf(s);
               return (
                 <tr key={s._id}>
-                  <td>{(page - 1) * PER + i + 1}</td>
+                  <td>
+                    <Link href={`/users/${s._id}`} className="strong-link">{s.fullName}</Link>
+                    <div className="desc">{s.mobileNumber || '—'}{s.isActive ? '' : ' · Account inactive'}</div>
+                  </td>
+                  <td><Pill tone={STATUS_TONE[st]}>{STATUS_LABEL[st]}</Pill></td>
+                  <td>{s.subscriptionEndDate ? <>{fmtDate(s.subscriptionEndDate)}<div className={'desc' + (st === 'expiring' ? ' warn-text' : '')}>{endsWhen(s.subscriptionEndDate)}</div></> : <span className="muted">No plan yet</span>}</td>
                   <td>{fmtDate(s.createdAt)}</td>
-                  <td><Link href={`/users/${s._id}`} className="strong-link">{s.fullName}</Link></td>
-                  <td>{s.mobileNumber || '—'}</td>
-                  <td><Pill tone={s.subscribed ? 'good' : 'off'}>{s.subscribed ? 'Subscribed' : 'Free user'}</Pill></td>
-                  <td className={exp ? 'bad-text' : ''}>{s.subscriptionEndDate ? <>{fmtDate(s.subscriptionEndDate)}{exp ? ' (expired)' : ''}</> : '—'}</td>
-                  <td><Pill tone={s.isActive ? 'good' : 'bad'}>{s.isActive ? 'Active' : 'Inactive'}</Pill></td>
                   <td>
                     <div className="row-actions">
-                      <Link className="btn sm" href={`/users/${s._id}`}>View</Link>
-                      {!s.subscribed || exp ? (
-                        <Link className="btn sm" href={`/offline-payments/new?studentId=${s._id}&name=${encodeURIComponent(s.fullName)}`}>Add payment</Link>
-                      ) : null}
-                      {s.subscribed && !exp ? <button type="button" className="btn sm" onClick={() => setConfirm({ kind: 'unsub', s })}>Unsubscribe</button> : null}
-                      <button type="button" className="btn sm danger-o" onClick={() => setConfirm({ kind: 'delete', s })}>Delete</button>
+                      <Link className="btn sm" href={`/users/${s._id}`}>Open</Link>
+                      <div className="kebab">
+                        <button type="button" className="btn ghost sm" aria-haspopup="menu" aria-expanded={menu === s._id} aria-label={`More actions for ${s.fullName}`}
+                                onClick={e => { e.stopPropagation(); setMenu(menu === s._id ? null : s._id); }}>⋯</button>
+                        {menu === s._id ? (
+                          <div className="menu" role="menu">
+                            <Link role="menuitem" href={`/offline-payments/new?studentId=${s._id}&name=${encodeURIComponent(s.fullName)}`}>{isRunning(st) ? 'Renew plan' : 'Add payment'}</Link>
+                            {isRunning(st) ? <button type="button" role="menuitem" onClick={() => { setMenu(null); setConfirm({ kind: 'unsub', s }); }}>End plan now…</button> : null}
+                            <button type="button" role="menuitem" className="dn" onClick={() => { setMenu(null); setConfirm({ kind: 'delete', s }); }}>Delete…</button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </td>
                 </tr>
               );
             })}
             {!rows.length && !loading ? (
-              <tr><td colSpan={8}>
+              <tr><td colSpan={5}>
                 {error ? (
                   <div className="err" role="alert"><strong>{error}</strong><span>The server didn’t respond. Your data is safe.</span><button type="button" className="btn" onClick={() => load()}>Try again</button></div>
                 ) : (
@@ -173,13 +214,13 @@ export default function UsersList({ filter, initial, initialFilters = {} }: { fi
 
       <ConfirmDialog
         open={Boolean(confirm)}
-        danger={confirm?.kind === 'delete'}
+        danger
         busy={busy}
-        title={confirm?.kind === 'delete' ? 'Delete this student?' : 'Unsubscribe this student?'}
+        title={confirm?.kind === 'delete' ? 'Delete this student?' : 'End this plan now?'}
         body={confirm?.kind === 'delete'
           ? `${confirm?.s.fullName} will be removed from the list. This cannot be undone from here.`
-          : `${confirm?.s.fullName} will lose access to paid content straight away.`}
-        confirmLabel={confirm?.kind === 'delete' ? 'Delete student' : 'Unsubscribe'}
+          : `${confirm?.s.fullName} moves to the free version straight away. Only the free videos stay open. Progress is kept.`}
+        confirmLabel={confirm?.kind === 'delete' ? 'Delete student' : 'End plan'}
         onConfirm={runConfirm}
         onCancel={() => setConfirm(null)}
       />

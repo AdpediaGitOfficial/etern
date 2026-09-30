@@ -29,8 +29,8 @@ export async function loadDashboard(token: string): Promise<DashboardData> {
     backendGet<SubscriptionPoint[]>('student/dashboard/subscriptions', token),
     backendGet<VideoRow[]>('courseMaterial/videoDetails', token),
     backendGet<TrendingRow[]>('courseMaterial/dashboard/trendingVideoDetails', token),
-    studentCount('expiresIn7Days=true', token),
-    studentCount('isExpired=true', token),
+    studentCount('segment=expiring', token),
+    studentCount('segment=lapsed', token),
   ]);
   const revenueFixed: Result<Revenue> = revenue.ok
     ? { ok: true, data: { ...revenue.data, growthPercentage: normaliseGrowth(revenue.data?.growthPercentage) } }

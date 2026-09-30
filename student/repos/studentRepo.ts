@@ -179,6 +179,9 @@ export const getAllStudents = async (
   } else if (filters.segment === 'lapsed') {
     matchStage.subscriptionEndDate = { $ne: null, $exists: true };
     matchStage.$nor = [{ subscribed: true, subscriptionEndDate: { $gt: now } }];
+  } else if (filters.segment === 'free') {
+    // Everyone without a running plan: never subscribed plus lapsed.
+    matchStage.$nor = [{ subscribed: true, subscriptionEndDate: { $gt: now } }];
   } else if (filters.segment === 'never') {
     matchStage.subscriptionEndDate = { $in: [null] };
   }
