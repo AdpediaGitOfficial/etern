@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Icon from './icons';
 import { THEME_COOKIE, type Theme } from '@/lib/theme';
 
 /** The server always renders an explicit theme, so the attribute is the single source of truth. */
@@ -20,8 +21,8 @@ export default function ThemeToggle() {
   }
 
   return (
-    <button type="button" className="btn theme-btn" onClick={toggle} aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
-      <span aria-hidden="true">{theme === 'dark' ? '☀' : '☾'}</span>
+    <button type="button" className="btn icon-only theme-btn" onClick={toggle} aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
+      <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
     </button>
   );
 }

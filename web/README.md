@@ -12,6 +12,15 @@ Moving the admin panel from Angular to Next.js. The Express API is unchanged.
 Left out on purpose: the Angular users list had a **"Fixed OTP" button** that makes a student's OTP always `112233`.
 That is a standing login backdoor for the student's account, so it was not ported. Say if you need it.
 
+## Modern UI and drill-down
+- **Every metric is clickable.** The four KPI cards open a details panel: revenue shows the latest online and offline payments, registered and
+  subscribed students show real student lists, and conversion shows the breakdown. Each panel links into the full list.
+- **Deep links.** The Users list reads its filters from the address (`/users?subscription=true&from=2026-09-01&to=2026-09-30`), so dashboard
+  drill-downs land on a pre-filtered list, and a filtered list can be bookmarked or shared. Invalid values are ignored.
+- **Funnel, video rows and quick actions are interactive**, and there is a mobile navigation menu.
+- **Design system.** Colour, radius and shadow tokens in `src/app/globals.css`, an icon set in `src/components/icons.tsx`, and a shared
+  details sheet in `src/components/SidePanel.tsx`.
+
 ## Enterprise dashboard features
 - **Light and dark mode.** Everyone starts in **light** mode, whatever their computer's setting. The sun/moon button switches themes, and the
   choice is stored in a cookie so the server renders the right colours on the first paint (no flash, no inline script).

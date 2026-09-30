@@ -1,3 +1,4 @@
+import { ShellProvider } from '@/components/ShellProvider';
 import Topbar from '@/components/Topbar';
 import { authedGet } from '@/lib/server';
 import type { Paged } from '@/lib/types';
@@ -9,12 +10,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const expiringCount = expiring.ok ? expiring.data?.totalCount ?? 0 : 0;
 
   return (
-    <div className="shell">
-      <Sidebar expiringCount={expiringCount} />
-      <div className="shell-main">
-        <Topbar />
-        <main className="content">{children}</main>
+    <ShellProvider>
+      <div className="shell">
+        <Sidebar expiringCount={expiringCount} />
+        <div className="shell-main">
+          <Topbar />
+          <main className="content">{children}</main>
+        </div>
       </div>
-    </div>
+    </ShellProvider>
   );
 }

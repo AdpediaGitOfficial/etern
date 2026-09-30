@@ -1,12 +1,15 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import Icon from '@/components/icons';
 import { downloadCsv } from '@/lib/csv';
 import { inr } from '@/lib/format';
 import type { DashboardData } from '@/lib/dashboardData';
 import AttentionCard from './AttentionCard';
 import FunnelCard from './FunnelCard';
 import KpiStrip from './KpiStrip';
+import MetricDrawer, { type Metric } from './MetricDrawer';
+import QuickActions from './QuickActions';
 import TrendCard from './TrendCard';
 import TrendingCard from './TrendingCard';
 import VideosCard from './VideosCard';
@@ -19,6 +22,7 @@ interface Props {
 export default function DashboardView({ initial, assetBase }: Props) {
   const [data, setData] = useState<DashboardData>(initial);
   const [busy, setBusy] = useState(false);
+  const [metric, setMetric] = useState<Metric | null>(null);
   const { stats, revenue, chart, videos, trending, expiring, expired, updatedAt } = data;
 
   // Plain fetch instead of router.refresh(): refresh inside a transition could stay pending forever.
@@ -58,20 +62,24 @@ export default function DashboardView({ initial, assetBase }: Props) {
     <div className="dash">
       <div className="dash-head">
         <div>
+          <div className="eyebrow">Dashboard</div>
           <h1>Overview</h1>
           <p className="muted" suppressHydrationWarning>
             Updated {new Date(updatedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
           </p>
         </div>
         <div className="head-actions">
-          <button type="button" className="btn" onClick={exportSummary}>⤓ Export summary</button>
+          <button type="button" className="btn" onClick={exportSummary}><Icon name="download" size={16} />Export summary</button>
           <button type="button" className="btn" onClick={refresh} disabled={pending} aria-label="Refresh dashboard data">
-            {pending ? 'Refreshing…' : '↻ Refresh'}
+            <Icon name="refresh" size={16} />{pending ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
       </div>
 
-      <KpiStrip stats={stats} revenue={revenue} chart={chart} retry={refresh} busy={pending} />
+      <KpiStrip stats={stats} revenue={revenue} chart={chart} onOpen={setMetric} retry={refresh} busy={pending} />
+      <MetricDrawer metric={metric} data={data} onClose={() => setMetric(null)} />
+
+      <QuickActions />
 
       <div className="grid">
         <TrendCard chart={chart} retry={refresh} busy={pending} />

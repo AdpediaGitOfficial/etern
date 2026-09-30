@@ -22,6 +22,8 @@ export interface VideoRow {
   studentsCompletedPercentage: number;
 }
 export interface TrendingRow {
+  /** MongoDB keeps the grouping key as _id; the ids are present on real responses but not guaranteed. */
+  _id?: { courseMaterialId?: string; subCategoryId?: string };
   courseMaterialName: string;
   subCategoryName: string;
   repeatedViews: number;

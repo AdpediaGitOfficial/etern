@@ -8,14 +8,15 @@ import { fmtDate, isExpired } from '@/lib/format';
 import type { Paged, Student } from '@/lib/types';
 
 type Filter = 'all' | 'upcoming' | 'expired';
+export interface InitialFilters { q?: string; subscription?: 'true' | 'false'; status?: 'true' | 'false'; from?: string; to?: string }
 const PER = 10;
 
-export default function UsersList({ filter, initial }: { filter: Filter; initial: Paged<Student> | null }) {
-  const [q, setQ] = useState('');
-  const [sub, setSub] = useState('All');
-  const [status, setStatus] = useState('All');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+export default function UsersList({ filter, initial, initialFilters = {} }: { filter: Filter; initial: Paged<Student> | null; initialFilters?: InitialFilters }) {
+  const [q, setQ] = useState(initialFilters.q ?? '');
+  const [sub, setSub] = useState(initialFilters.subscription ?? 'All');
+  const [status, setStatus] = useState(initialFilters.status ?? 'All');
+  const [from, setFrom] = useState(initialFilters.from ?? '');
+  const [to, setTo] = useState(initialFilters.to ?? '');
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<Student[]>(initial?.data ?? []);
   const [total, setTotal] = useState(initial?.totalCount ?? 0);
@@ -63,6 +64,20 @@ export default function UsersList({ filter, initial }: { filter: Filter; initial
   }, [load, q]);
 
   const changeFilter = (fn: () => void) => { fn(); setPage(1); };
+  const filtered = Boolean(q.trim()) || sub !== 'All' || status !== 'All' || Boolean(from && to);
+
+  // Keep the address in step with the filters, so a filtered list can be bookmarked or shared.
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (q.trim()) p.set('q', q.trim());
+    if (sub !== 'All') p.set('subscription', sub);
+    if (status !== 'All') p.set('status', status);
+    if (from && to) { p.set('from', from); p.set('to', to); }
+    const qs = p.toString();
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [q, sub, status, from, to]);
+
+  function clearFilters() { setQ(''); setSub('All'); setStatus('All'); setFrom(''); setTo(''); setPage(1); }
 
   async function runConfirm() {
     if (!confirm) return;
@@ -107,7 +122,8 @@ export default function UsersList({ filter, initial }: { filter: Filter; initial
         </label>
         <label>Joined from<input type="date" value={from} max={to || undefined} onChange={e => changeFilter(() => setFrom(e.target.value))} /></label>
         <label>Joined to<input type="date" value={to} min={from || undefined} onChange={e => changeFilter(() => setTo(e.target.value))} /></label>
-        <button type="button" className="btn export" onClick={exportXlsx} disabled={exporting}>{exporting ? 'Exporting…' : '⤓ Export to Excel'}</button>
+        {filtered ? <button type="button" className="btn" onClick={clearFilters}>Clear filters</button> : null}
+        <button type="button" className="btn export" onClick={exportXlsx} disabled={exporting}>{exporting ? 'Exporting…' : 'Export to Excel'}</button>
       </div>
       {(from && !to) || (!from && to) ? <p className="hint">Pick both dates to filter by joining date.</p> : null}
 
