@@ -1,0 +1,468 @@
+swagger: '3.0.0'
+info:
+  title: Course Material Model API
+  description: API related to course material models
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/coursematerial/all:
+    get:
+      summary: Fetch All Course Materials
+      description: Endpoint to fetch all Course Materials
+      tags:
+        - Course Material Model
+      security:
+        - JWT: []
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Fetch all Course Materials successfully
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        courseMaterialName:
+                          type: string
+                          example: "Self Help Video"
+                        subCategoryId:
+                          type: string
+                          example: "670d2fd920824883c3100257"
+                        description:
+                          type: string
+                          example: "Self Help video"
+                        courseMaterialUrl:
+                          type: string
+                          example: "upload/coursematerial/sample.jpg"
+                        isActive:
+                          type: boolean
+                          example: true
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: An error occurred
+
+  /api/coursematerial/by-subcategory/{subCategoryId}/{type}/{studentId}:
+    get:
+      summary: Fetch coursematerials by sub category ID
+      description: Endpoint to fetch course materials by a given sub category ID
+      tags:
+        - Course Material Model
+      parameters:
+        - name: subCategoryId
+          in: path
+          required: true
+          description: The ID of the sub category
+          schema:
+            type: string
+            example: "670d2fd920824883c3100257"
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: string
+            example: "670d2fd920824883c3100259"
+        - name: type
+          in: path
+          required: true
+          description: Type of the category
+          schema:
+            type: string
+            enum: ["kid", "parent"]
+            example: "kid"        
+      security:
+        - JWT: []
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Fetch course materials by sub category ID successfully
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        courseMaterialName:
+                          type: string
+                          example: "Self Help video"
+                        subCategoryId:
+                          type: string
+                          example: "670d2fd920824883c3100257"
+                        description:
+                          type: string
+                          example: "Self Help video"
+                        courseMaterialUrl:
+                          type: string
+                          example: "upload/coursematerial/sample.jpg"
+                        isActive:
+                          type: boolean
+                          example: true
+        404:
+          description: course material not found for the given sub category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No course material found for this sub category
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: An error occurred
+
+/api/coursematerial/track-view:
+    post:
+      summary: Track video view
+      description: Track video view
+      tags:
+        - Course Material Model
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                  example: 32423423424              
+                courseMaterialId:
+                  type: string
+                  format: string
+                  example: 4123123
+                  nullable: true                 
+
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: data saved successfully
+                  result:
+                    type: string
+                    example: ''
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user
+
+/api/coursematerial/add-watch-history:
+    post:
+      summary: add video watch history
+      description: add video watch history
+      tags:
+        - Course Material Model
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                studentId:
+                  type: string
+                  example: "670d2fd920824883c3100257"              
+                courseMaterialId:
+                  type: string
+                  format: string
+                  example: "670d2fd920824883c3100257"                  
+                categoryId:
+                  type: string
+                  format: string
+                  example: "670d2fd920824883c3100257"
+                subCategoryId:
+                  type: string
+                  format: string
+                  example: "670d2fd920824883c3100257"
+                watchedDuration:
+                  type: number
+                  format: number
+                  example: 120 
+
+                                               
+
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: data saved successfully
+                  result:
+                    type: string
+                    example: ''
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user
+
+/api/coursematerial/:
+    post:
+      summary: Create Course Material
+      description: Endpoint to Create Course Material
+      tags:
+        - Course Material Model
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                courseMaterialName:
+                  type: string
+                  example: Stories video
+                subCategoryId:
+                  type: string
+                  example: "670d2fd920824883c3100257"  
+                description:
+                  type: string
+                  example: "Stories"
+                courseMaterialUrl:
+                  type: string
+                  example: "upload/coursematerial/sample.jpg"
+                isActive:
+                  type: boolean
+                  example: true                  
+                sorting:
+                  type: number
+                  example: 1
+                type:
+                  type: string
+                  enum:
+                    - kid
+                    - parent                            
+                  example: kid
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Create Data Successfully
+                  result:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 670d2fd920824883c3100257
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user   
+
+/api/coursematerials/{id}:
+    put:
+      summary: Update Course Material
+      description: Endpoint to Update Course Material
+      tags:
+        - Course Material Model
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the course material
+          schema:
+            type: string
+            example: "670d2fd920824883c3100257"
+      
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                courseMaterialName:
+                  type: string
+                  example: Stories video
+                subCategoryId:
+                  type: string
+                  example: "670d2fd920824883c3100257"  
+                description:
+                  type: string
+                  example: "Stories"
+                courseMaterialUrl:
+                  type: string
+                  example: "upload/coursematerial/sample.jpg"
+                isActive:
+                  type: boolean
+                  example: true                  
+                sorting:
+                  type: number
+                  example: 1
+                type:
+                  type: string
+                  enum:
+                    - kid
+                    - parent                            
+                  example: kid
+      responses:
+        200:
+          description: Success response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Update Data Successfully
+                  result:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: 670d2fd920824883c3100257
+        401:
+          description: Unauthorized response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unauthorized user   
+
+/api/coursematerial/{id}:
+  delete:
+    summary: Delete course material
+    description: Endpoint to delete a Course Material
+    tags:
+      - Course Material Model
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the Course Material 
+        schema:
+          type: string
+          example: "670d2fd920824883c3100257"
+    security:
+      - JWT: []
+    responses:
+      200:
+        description: Success response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                message:
+                  type: string
+                  example: Deleted data successfully
+                result:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "670d2fd920824883c3100257"
+      401:
+        description: Unauthorized response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Unauthorized user
+
+  
+components:
+  securitySchemes:
+    JWT:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: JWT Bearer token
