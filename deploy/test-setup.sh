@@ -76,13 +76,25 @@ npm ci --silent
 BACKEND_URL="http://127.0.0.1:$API_PORT" npm run build
 cd ..
 
-start() { # name, folder, command, env...
+# Starts a service fully detached, so this script returns to the shell instead of holding it open.
+start() { # name, folder, env...
   local name="$1" dir="$2"; shift 2
   if command -v pm2 >/dev/null; then
     (cd "$dir" && env "$@" pm2 start --name "$name" --cwd "$dir" --interpreter none -- /bin/sh -c "$CMD" >/dev/null)
   else
-    (cd "$dir" && env "$@" nohup /bin/sh -c "$CMD" > "$TEST_DIR/$name.log" 2>&1 &)
+    (cd "$dir" && env "$@" setsid nohup /bin/sh -c "$CMD" < /dev/null > "$TEST_DIR/$name.log" 2>&1 &)
+    sleep 1
   fi
+}
+
+# Waits up to 25 seconds for a URL to answer at all (any status counts as "listening").
+wait_for() {
+  local url="$1" i
+  for i in $(seq 1 25); do
+    curl -s -o /dev/null --max-time 2 "$url" && return 0
+    sleep 1
+  done
+  return 1
 }
 
 say "Starting the test backend on $API_PORT"
@@ -91,12 +103,25 @@ say "Starting the test dashboard on $WEB_PORT"
 CMD="node .next/standalone/server.js" start etern-admin-test "$TEST_DIR/web" \
   "BACKEND_URL=http://127.0.0.1:$API_PORT" "COOKIE_SECURE=false" "PORT=$WEB_PORT" "HOSTNAME=127.0.0.1" "NODE_ENV=production"
 
-sleep 6
 printf '\n'
-curl -fsS "http://127.0.0.1:$API_PORT/api/user/login" -X POST -H 'content-type: application/json' -d '{}' >/dev/null 2>&1 \
-  && echo "backend  OK  http://127.0.0.1:$API_PORT" || echo "backend  check $TEST_DIR/etern-api-test.log"
-curl -fsS "http://127.0.0.1:$WEB_PORT/api/health" >/dev/null 2>&1 \
-  && echo "dashboard OK  http://127.0.0.1:$WEB_PORT" || echo "dashboard check $TEST_DIR/etern-admin-test.log"
+ok=1
+if wait_for "http://127.0.0.1:$API_PORT/api/user/login"; then
+  echo "backend   OK  http://127.0.0.1:$API_PORT"
+else
+  ok=0
+  echo "backend   did not start. Last lines of $TEST_DIR/etern-api-test.log:"
+  tail -3 "$TEST_DIR/etern-api-test.log" 2>/dev/null | cut -c1-160 | sed 's/^/    /'
+  grep -q "Failed to connect to database" "$TEST_DIR/etern-api-test.log" 2>/dev/null &&
+    echo "    The database in DATABASE= could not be reached from this server."
+fi
+if wait_for "http://127.0.0.1:$WEB_PORT/api/health"; then
+  echo "dashboard OK  http://127.0.0.1:$WEB_PORT"
+else
+  ok=0
+  echo "dashboard did not start. Last lines of $TEST_DIR/etern-admin-test.log:"
+  tail -3 "$TEST_DIR/etern-admin-test.log" 2>/dev/null | cut -c1-160 | sed 's/^/    /'
+fi
+[ "$ok" = 1 ] || echo
 
 cat <<INFO
 
