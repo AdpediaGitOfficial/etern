@@ -17,6 +17,25 @@ npm run build        # tsc (tsconfig.json) writes dist/, then copies utils/email
 npm start            # node -r newrelic dist/index.js
 ```
 - Keep a `.env` next to `package.json` (it is not in git).
+
+#### Token lifetime
+
+Tokens used to be signed with `expiresIn: '100000d'` — about 273 years — so a
+leaked token was valid forever. Both lifetimes are now set per role:
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `ADMIN_TOKEN_EXPIRY` | `12h` | Admin panel. Keep the dashboard's `SESSION_HOURS` at or below this, or the token expires before the cookie and the admin is sent back to sign-in mid-session. |
+| `USER_TOKEN_EXPIRY` | `365d` | Mobile app. Long on purpose: **there is no refresh flow**, so when a student's token expires the app has to put them through the OTP login again. Lower it only once the app is confirmed to handle a 401 by re-authenticating. |
+
+Both take a jsonwebtoken duration (`"12h"`, `"30d"`). A malformed value stops the
+server at start-up rather than failing every sign-in.
+
+Tokens already issued keep their original 273-year expiry — changing these
+settings only affects tokens signed from now on. For an admin, changing their
+password invalidates every token issued before the change (Settings → Your
+account). For students there is no such lever, so forcing everyone off the old
+tokens would mean rotating `JWT_SECRET`, which signs every student out at once.
 - Uploaded files live in `dist/upload` (`__dirname/upload` at run time). When you deploy into a new folder, link it to the existing uploads:
   `ln -s /path/to/live/dist/upload dist/upload` (create `dist/` first, or run it after the first build).
 - Start it from the repo root, because the API docs are read from `./swaggerdocs/*.yaml`.

@@ -114,7 +114,7 @@ that protects both routes (`release/2026-09-30-auth-fixes`), and keep the API re
 |---|---|
 | `BACKEND_URL` | Base URL of the Express API (required). |
 | `ASSET_BASE_URL` | Public base URL for uploaded images. Defaults to `BACKEND_URL`. |
-| `SESSION_HOURS` | Cookie lifetime, default 8. The API's own token does not expire, so this is the effective session length. |
+| `SESSION_HOURS` | Cookie lifetime, default 8. Keep it at or below the API's `ADMIN_TOKEN_EXPIRY` (default `12h`), or the token expires first and the admin is sent back to sign-in mid-session. |
 | `COOKIE_SECURE` | Defaults to `true` in production. Set `false` only when testing over plain http. |
 
 ## Deploy on a single server (Docker + Caddy)

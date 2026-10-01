@@ -17,11 +17,13 @@ import logger from './config/logger';
 import connectToDatabase from './config/connectToDatabase';
 import errorHandleMiddleware from './middleware/errorHandleMiddleware';
 import configKeys from './configKeys';
+import { validateTokenConfig } from './authentication/authentication';
 import setupSwagger from './swaggerdocs/swaggerConfig';
 import path from 'path';
 
 const app = express();
 
+validateTokenConfig();
 connectToDatabase();
 
 //Newly added
