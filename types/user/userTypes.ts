@@ -17,6 +17,7 @@ export interface IUsers extends Document {
   interest?: string;
   status?: number;
   password?: string;
+  passwordChangedAt?: Date;
   role?: string;
   currentStudentId?: string;
   fixedOtp?: string;

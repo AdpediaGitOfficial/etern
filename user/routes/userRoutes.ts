@@ -10,6 +10,7 @@ import {
   getUsers,
   login,
   registerAdmin,
+  changePassword,
   updateParentDob,
   verifyParentDob,
   switchStudent,
@@ -30,6 +31,7 @@ import {
   userUpdateValidation,
   loginValidation,
   adminRegisterValidation,
+  changePasswordValidation,
   userDobValidation,
   userDobVerifyValidation,
   switchStudentValidation,
@@ -60,6 +62,7 @@ router.post('/delete-account', authenticateUser, deleteAccount);
 router.post('/login', loginValidation, login);
 router.get('/all', authenticateAdmin, getUsers);
 router.post('/register-admin', authenticateAdmin, adminRegisterValidation, registerAdmin);
+router.post('/change-password', authenticateAdmin, changePasswordValidation, changePassword);
 router.get('/userCount', authenticateAdmin, getUserCount);
 router.get('/export-users', authenticateAdmin, exportUsers);
 

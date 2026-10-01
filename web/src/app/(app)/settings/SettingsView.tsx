@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import AddAdmin from './AddAdmin';
+import ChangePassword from './ChangePassword';
 import ThemePicker from './ThemePicker';
 import Icon from '@/components/icons';
 import { PageHead } from '@/components/ui';
@@ -45,10 +46,12 @@ export default function SettingsView({ account }: { account: Account }) {
             <dt>Role</dt><dd>Administrator</dd>
           </dl>
           <div className="warn-line settings-note">
-            Changing your own name, email or password is not available yet — the API only accepts those
-            changes from student accounts, not administrators. Ask a developer to make the change directly
-            for now.
+            Changing your name or email is still not available — the API only accepts those changes from
+            student accounts, not administrators.
           </div>
+
+          <ChangePassword />
+
           <form action="/api/auth/logout" method="post" className="acts">
             <button type="submit" className="btn"><Icon name="logout" size={16} /> Sign out</button>
           </form>

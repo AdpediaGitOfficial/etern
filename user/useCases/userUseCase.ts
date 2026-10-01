@@ -28,6 +28,8 @@ import {
   verifyLogin,
   createAdmin,
   hashPassword,
+  verifyPasswordById,
+  updatePassword,
   updateParentDob,
   verifyParentDobYear,
   updatecurrentStudent,
@@ -222,6 +224,41 @@ export const loginUseCase = async (
   const result = await getProfileById(check._id);
   if (!result) throw new AppError('User profile not found', HttpStatus.NOT_FOUND);
   return { token, ...result };
+};
+
+/**
+ * Changes the signed-in administrator's own password.
+ *
+ * The account comes from the verified token, never from the request body, so one
+ * admin cannot set another's password through this route.
+ */
+export const changePasswordUseCase = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ token: string }> => {
+  const matches = await verifyPasswordById(userId, currentPassword);
+  if (matches === null) {
+    throw new AppError('No user found for the given user ID', HttpStatus.NOT_FOUND);
+  }
+  if (!matches) {
+    throw new AppError('Your current password is incorrect', HttpStatus.BAD_REQUEST);
+  }
+  if (currentPassword === newPassword) {
+    throw new AppError(
+      'The new password must be different from the current one',
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+  const hashedPassword = await hashPassword(newPassword);
+  const updated = await updatePassword(userId, hashedPassword);
+  if (!updated) {
+    throw new AppError('Failed to update the password', HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+  // Every token issued before this moment is now refused, including the one the
+  // caller is holding. Hand back a fresh one so the admin making the change stays
+  // signed in while their other devices are cut off.
+  return { token: generateToken({ role: 'admin', userId }) };
 };
 
 export const registerAdminUseCase = async (data: IAdminBody): Promise<Pick<IUsers, '_id'>> => {

@@ -18,6 +18,9 @@ const usersSchema = new Schema<IUsers>(
     isDeleted: { type: Boolean, default: false },
     status: { type: Number, default: 1 },
     password: { type: String, default: '' },
+    // Set whenever the password changes. Tokens issued before this moment are refused,
+    // which is what makes changing a password actually end the other sessions.
+    passwordChangedAt: { type: Date },
     role: { type: String },
     currentStudentId: { type: String, default: '' },
   },

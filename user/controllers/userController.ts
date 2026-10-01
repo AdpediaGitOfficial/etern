@@ -10,6 +10,7 @@ import {
   getUsersUseCase,
   loginUseCase,
   registerAdminUseCase,
+  changePasswordUseCase,
   updateParentDobUseCase,
   verifyParentDobUseCase,
   switchStudentUseCase,
@@ -274,6 +275,33 @@ export const registerAdmin = asyncHandler(async (req: Request, res: Response) =>
     success: true,
     message: responseMessages.registration_success,
     result: result,
+  });
+});
+
+/**
+ * Changes the signed-in administrator's own password. The account is taken from
+ * res.locals.userId, which authenticateAdmin set from the verified token — not
+ * from the body, so this cannot be pointed at another account.
+ */
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(HttpStatus.BAD_REQUEST).json({
+      success: false,
+      errors: errors.array(),
+    });
+    return;
+  }
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword: string;
+    newPassword: string;
+  };
+  const userId = res.locals.userId as string;
+  const result = await changePasswordUseCase(userId, currentPassword, newPassword);
+  res.status(200).json({
+    success: true,
+    message: 'Password changed. Your other devices have been signed out.',
+    result,
   });
 });
 

@@ -188,6 +188,52 @@ export const verifyLogin = async (
   return isMatch ? { _id: objectIdToString(user._id as ObjectId) } : null;
 };
 
+/**
+ * Checks a password against the stored hash for one account. Separate from
+ * verifyLogin, which looks the account up by email: here the account is already
+ * known from the token, and the email must not be part of the check.
+ *
+ * Returns null when there is no such active account, and false when the password
+ * is wrong, so the caller can tell the two apart.
+ */
+export const verifyPasswordById = async (
+  userId: string,
+  password: string,
+): Promise<boolean | null> => {
+  const user = await usersModel
+    .findOne({ _id: userId, isDeleted: false, status: 1 })
+    .select({ password: 1 })
+    .lean();
+  if (!user) return null;
+  if (!user.password) return false;
+  return bcrypt.compare(password, user.password);
+};
+
+/**
+ * Stores the new hash and stamps the change. passwordChangedAt is what
+ * authenticateAdmin compares the token's issued-at against, so the two must be
+ * written together or old tokens would keep working.
+ */
+export const updatePassword = async (
+  userId: string,
+  hashedPassword: string,
+): Promise<boolean> => {
+  const result = await usersModel.updateOne(
+    { _id: userId, isDeleted: false, status: 1 },
+    { $set: { password: hashedPassword, passwordChangedAt: new Date() } },
+  );
+  return result.matchedCount > 0;
+};
+
+/** When this account's password last changed, or null if it never has. */
+export const getPasswordChangedAt = async (userId: string): Promise<Date | null> => {
+  const user = await usersModel
+    .findOne({ _id: userId })
+    .select({ passwordChangedAt: 1 })
+    .lean();
+  return (user?.passwordChangedAt as Date | undefined) ?? null;
+};
+
 //Password hashing for user reg
 export const hashPassword = async (password: string): Promise<string> => {
   const saltRounds = 10;
