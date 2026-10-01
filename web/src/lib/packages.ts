@@ -29,6 +29,21 @@ export function durationLabel(days: number): string {
 type Plan = { price: number; validity: number };
 
 /** One-line pricing summary for the list: "₹1,499" or "From ₹1,499", plus "2 plans · 3 months, 1 year". */
+/** Plans in the order a student should read them: shortest first, and the cheaper one first when two are the same length. */
+export function sortedPlans<T extends Plan>(plans: T[] | undefined): T[] {
+  return [...(plans ?? [])].sort((a, b) => a.validity - b.validity || a.price - b.price);
+}
+
+/**
+ * Lengths that are offered more than once. A student would see two options of the same length at different prices,
+ * which is nearly always a mistake, so the package page points them out.
+ */
+export function repeatedLengths(plans: Plan[] | undefined): Set<number> {
+  const count = new Map<number, number>();
+  (plans ?? []).forEach(p => count.set(p.validity, (count.get(p.validity) ?? 0) + 1));
+  return new Set([...count].filter(([, n]) => n > 1).map(([days]) => days));
+}
+
 export function planSummary(plans: Plan[] | undefined, money: (n: number) => string): { headline: string; detail: string } | null {
   if (!plans?.length) return null;
   const cheapest = Math.min(...plans.map(p => p.price));

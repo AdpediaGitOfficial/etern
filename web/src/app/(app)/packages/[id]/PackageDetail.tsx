@@ -9,7 +9,7 @@ import { ConfirmDialog, PageHead } from '@/components/ui';
 import { api } from '@/lib/api';
 import { firstOf } from '@/lib/entityPage';
 import { inr } from '@/lib/format';
-import { bestValueIndex, durationLabel, perMonth, planSummary, statusPayload } from '@/lib/packages';
+import { bestValueIndex, durationLabel, perMonth, planSummary, repeatedLengths, sortedPlans, statusPayload } from '@/lib/packages';
 import type { PackageRow } from '@/lib/types';
 
 /** The package page: who it is for, what it costs, and the controls to turn it on or off, edit, copy or delete. */
@@ -22,9 +22,11 @@ export default function PackageDetail({ initial }: { initial: PackageRow }) {
   const nextId = useRef(1);
   const say = useCallback((msg: string, extra: Partial<ToastData> = {}) => setToast({ id: nextId.current++, msg, ...extra }), []);
 
-  const plans = p.packageCosts ?? [];
+  // Shortest first, so a long price list reads in order instead of in the order it happened to be saved.
+  const plans = sortedPlans(p.packageCosts);
   const summary = planSummary(plans, inr);
   const best = bestValueIndex(plans);
+  const repeated = repeatedLengths(plans);
 
   async function setActive(isActive: boolean, isUndo = false) {
     const before = p;
@@ -73,12 +75,18 @@ export default function PackageDetail({ initial }: { initial: PackageRow }) {
               <div><h2>Plans</h2><p className="muted">Each plan starts the day it is given to a student.</p></div>
               <Link className="btn sm" href={`/packages/${p._id}/edit`}>{plans.length ? 'Change plans' : 'Add a plan'}</Link>
             </div>
+            {repeated.size ? (
+              <p className="warn-line" role="status">
+                {repeated.size === 1 ? 'One length is' : `${repeated.size} lengths are`} offered at more than one price
+                ({[...repeated].sort((a, b) => a - b).map(durationLabel).join(', ')}). Students see every plan, so keep the one you mean to sell.
+              </p>
+            ) : null}
             {plans.length ? (
               <div className="plan-grid">
                 {plans.map((c, i) => (
                   <div key={c._id ?? i} className={'plan-card' + (i === best ? ' best' : '')}>
                     {i === best ? <span className="badge-best">Best value</span> : null}
-                    <div className="len">{durationLabel(c.validity)}</div>
+                    <div className="len">{durationLabel(c.validity)}{repeated.has(c.validity) ? <span className="dup" title="Another plan is this length too">repeated</span> : null}</div>
                     <div className="amt">{inr(c.price)}</div>
                     <div className="muted per">{c.validity > 30 ? `about ${inr(Math.round(perMonth(c)))} a month` : 'one month of access'}</div>
                     <small className="muted">{c.validity} days of access</small>

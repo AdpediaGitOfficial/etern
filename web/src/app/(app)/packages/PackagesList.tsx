@@ -2,24 +2,24 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/icons';
-import SidePanel from '@/components/SidePanel';
 import Toast, { type ToastData } from '@/components/Toast';
-import { ConfirmDialog, Empty, PanelError, Pill } from '@/components/ui';
+import { ConfirmDialog, Empty, PanelError } from '@/components/ui';
 import { api, listOf } from '@/lib/api';
 import { inr } from '@/lib/format';
-import { durationLabel, planSummary, statusPayload } from '@/lib/packages';
+import { planSummary, statusPayload } from '@/lib/packages';
 import type { PackageRow } from '@/lib/types';
 
 type Tab = 'all' | 'on' | 'off';
 
 export default function PackagesList({ initial, notice }: { initial: PackageRow[] | null; notice?: string }) {
+  const router = useRouter();
   const [rows, setRows] = useState<PackageRow[]>(initial ?? []);
   const [failed, setFailed] = useState(!initial);
   const [tab, setTab] = useState<Tab>('all');
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState<string | null>(null);
-  const [detail, setDetail] = useState<PackageRow | null>(null);
   const [confirm, setConfirm] = useState<PackageRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(notice ? { id: 0, msg: notice, tone: 'good' } : null);
@@ -64,13 +64,16 @@ export default function PackagesList({ initial, notice }: { initial: PackageRow[
     if (!confirm) return;
     setBusy(true);
     const r = await api(`package/${confirm._id}`, { method: 'DELETE' }, `Could not delete “${confirm.packageName}”.`);
-    if (r.ok) { setRows(rs => rs.filter(x => x._id !== confirm._id)); setDetail(null); say(`“${confirm.packageName}” was deleted.`); }
+    if (r.ok) { setRows(rs => rs.filter(x => x._id !== confirm._id)); say(`“${confirm.packageName}” was deleted.`); }
     else say(r.message, { tone: 'bad' });
     setBusy(false);
     setConfirm(null);
   }
 
-  const openDetail = (p: PackageRow) => (e: React.MouseEvent) => { if (!(e.target as HTMLElement).closest('button, a')) setDetail(p); };
+  // The whole row opens the package. Anything the row already handles (the switch, the ⋯ menu) keeps its own click.
+  const openRow = (p: PackageRow) => (e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest('button, a')) router.push(`/packages/${p._id}`);
+  };
 
   return (
     <div className="card flush">
@@ -96,9 +99,9 @@ export default function PackagesList({ initial, notice }: { initial: PackageRow[
               {visible.map(p => {
                 const s = planSummary(p.packageCosts, inr);
                 return (
-                  <tr key={p._id} className="clickable" onClick={openDetail(p)}>
+                  <tr key={p._id} className="clickable" onClick={openRow(p)}>
                     <td>
-                      <button type="button" className="strong-link linkbtn" onClick={() => setDetail(p)}>{p.packageName}</button>
+                      <Link className="strong-link" href={`/packages/${p._id}`}>{p.packageName}</Link>
                       <div className="desc" title={p.description || undefined}>{p.description || 'No description'}</div>
                     </td>
                     <td><span className="chip">{p.ageFrom}–{p.ageTo} yrs</span></td>
@@ -115,7 +118,7 @@ export default function PackagesList({ initial, notice }: { initial: PackageRow[
                                 onClick={e => { e.stopPropagation(); setMenu(menu === p._id ? null : p._id); }}>⋯</button>
                         {menu === p._id ? (
                           <div className="menu" role="menu">
-                            <button type="button" role="menuitem" onClick={() => { setMenu(null); setDetail(p); }}>View details</button>
+                            <Link role="menuitem" href={`/packages/${p._id}`}>Open</Link>
                             <Link role="menuitem" href={`/packages/${p._id}/edit`}>Edit</Link>
                             <Link role="menuitem" href={`/packages/new?copy=${p._id}`}>Duplicate</Link>
                             <button type="button" role="menuitem" className="dn" onClick={() => { setMenu(null); setConfirm(p); }}>Delete…</button>
@@ -131,24 +134,8 @@ export default function PackagesList({ initial, notice }: { initial: PackageRow[
           {!visible.length ? <Empty title={rows.length ? 'No packages match' : 'No packages yet'} hint={rows.length ? 'Try a different word or switch the tab.' : 'Use “Add package” to create the first one.'} /> : null}
         </div>
       )}
-      <div className="foot">Click a row to see its plans. Use the switch to turn a package on or off.</div>
+      <div className="foot">Click a row to open the package. Use the switch to turn it on or off.</div>
 
-      <SidePanel open={Boolean(detail)} title={detail?.packageName ?? ''} subtitle={detail ? `${detail.ageFrom}–${detail.ageTo} years` : undefined} onClose={() => setDetail(null)}
-                 icon={<span className="kpi-ic teal"><Icon name="package" /></span>}
-                 footer={detail ? (<><Link className="btn primary" href={`/packages/${detail._id}/edit`}>Edit</Link><Link className="btn" href={`/packages/new?copy=${detail._id}`}>Duplicate</Link><button type="button" className="btn danger-o" onClick={() => setConfirm(detail)}>Delete…</button></>) : null}>
-        {detail ? (
-          <>
-            <Pill tone={detail.isActive ? 'good' : 'off'}>{detail.isActive ? 'Active' : 'Inactive'}</Pill>
-            <section>
-              <div className="sec-title">Plans</div>
-              {detail.packageCosts?.length ? (
-                <ul className="rows">{detail.packageCosts.map((c, i) => <li key={c._id ?? i}><span className="grow">{durationLabel(c.validity)}</span><strong>{inr(c.price)}</strong></li>)}</ul>
-              ) : <p className="muted">No plans yet. Edit the package to add one.</p>}
-            </section>
-            <section><div className="sec-title">Description</div><p>{detail.description || 'No description'}</p></section>
-          </>
-        ) : null}
-      </SidePanel>
 
       <ConfirmDialog open={Boolean(confirm)} danger busy={busy} title={`Delete “${confirm?.packageName ?? ''}”?`}
                      body="Students who already bought it keep access. It will no longer be offered to anyone." confirmLabel="Delete package" onConfirm={remove} onCancel={() => setConfirm(null)} />

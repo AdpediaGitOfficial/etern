@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AGE_PRESETS, bestValueIndex, DURATIONS, draftFrom, durationLabel, emptyDraft, perMonth, planSummary, statusPayload, toPayload, validateDraft } from './packages';
+import { AGE_PRESETS, DURATIONS, bestValueIndex, draftFrom, durationLabel, emptyDraft, perMonth, planSummary, repeatedLengths, sortedPlans, statusPayload, toPayload, validateDraft } from './packages';
 import type { PackageRow } from './types';
 
 const inr = (n: number) => `₹${n}`;
@@ -103,5 +103,31 @@ describe('perMonth / bestValueIndex', () => {
     expect(bestValueIndex([{ price: 1000, validity: 30 }, { price: 3000, validity: 90 }])).toBe(-1); // same per-month price
     expect(bestValueIndex([{ price: 1000, validity: 30 }])).toBe(-1);
     expect(bestValueIndex(undefined)).toBe(-1);
+  });
+});
+
+describe('sortedPlans', () => {
+  const plan = (validity: number, price: number) => ({ validity, price });
+  it('puts the shortest first and the cheaper one first within a length', () => {
+    const out = sortedPlans([plan(365, 9000), plan(30, 2000), plan(180, 6000), plan(30, 1000), plan(180, 5000)]);
+    expect(out.map(p => [p.validity, p.price])).toEqual([[30, 1000], [30, 2000], [180, 5000], [180, 6000], [365, 9000]]);
+  });
+  it('does not change the original array, and copes with none', () => {
+    const src = [plan(90, 3000), plan(30, 1000)];
+    sortedPlans(src);
+    expect(src[0].validity).toBe(90);
+    expect(sortedPlans(undefined)).toEqual([]);
+  });
+});
+
+describe('repeatedLengths', () => {
+  const plan = (validity: number, price: number) => ({ validity, price });
+  it('finds lengths offered more than once', () => {
+    const out = repeatedLengths([plan(30, 2000), plan(30, 1000), plan(90, 3000), plan(180, 5000), plan(180, 6000)]);
+    expect([...out].sort((a, b) => a - b)).toEqual([30, 180]);
+  });
+  it('is empty when every length is offered once', () => {
+    expect(repeatedLengths([plan(30, 1000), plan(90, 3000)]).size).toBe(0);
+    expect(repeatedLengths(undefined).size).toBe(0);
   });
 });

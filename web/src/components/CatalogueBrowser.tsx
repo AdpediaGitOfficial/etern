@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Icon from '@/components/icons';
-import SidePanel from '@/components/SidePanel';
 import Toast, { type ToastData } from '@/components/Toast';
 import { ConfirmDialog, Empty, PanelError, Pager } from '@/components/ui';
 import { api, listOf, totalOf } from '@/lib/api';
@@ -64,6 +64,7 @@ function LinkCell({ url, onCopy }: { url: string; onCopy: () => void }) {
 }
 
 export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
+  const router = useRouter();
   const [rows, setRows] = useState<T[]>(p.initial?.rows ?? []);
   const [total, setTotal] = useState(p.initial?.total ?? 0);
   const [failed, setFailed] = useState(!p.initial);
@@ -74,7 +75,6 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
   const [tab, setTab] = useState<StatusTab>('all');
   const [type, setType] = useState<'' | 'kid' | 'parent'>('');
   const [menu, setMenu] = useState<string | null>(null);
-  const [detail, setDetail] = useState<T | null>(null);
   const [confirm, setConfirm] = useState<T | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(p.notice ? { id: 0, msg: p.notice, tone: 'good' } : null);
@@ -121,7 +121,6 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
   async function setActive(r: T, isActive: boolean, isUndo = false) {
     const apply = (v: boolean) => {
       setRows(rs => rs.map(x => (x._id === r._id ? { ...x, isActive: v } : x)));
-      setDetail(d => (d && d._id === r._id ? { ...d, isActive: v } : d));
     };
     apply(isActive);
     const res = await api(`${p.endpoint}/${r._id}`, { method: 'PUT', body: p.statusForm(r, isActive) }, `Could not update “${p.nameOf(r)}”.`);
@@ -137,7 +136,6 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
     const res = await api(`${p.endpoint}/${confirm._id}`, { method: 'DELETE' }, `Could not delete “${p.nameOf(confirm)}”.`);
     if (res.ok) {
       say(`“${p.nameOf(confirm)}” was deleted.`);
-      setDetail(null);
       if (rows.length === 1 && page > 1) setPage(page - 1); else await load();
     } else say(res.message, { tone: 'bad' });
     setBusy(false);
@@ -145,7 +143,10 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
   }
 
   const filtered = Boolean(term.trim() || tab !== 'all' || type);
-  const open = (r: T) => (e: React.MouseEvent) => { if (!(e.target as HTMLElement).closest('button, a')) setDetail(r); };
+  // The whole row opens the item's page; the switch and the ⋯ menu keep their own clicks.
+  const openRow = (r: T) => (e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest('button, a')) router.push(`${p.base}/${r._id}`);
+  };
   const pickTab = (t: StatusTab) => { setTab(t); setPage(1); };
   const pickType = (t: '' | 'kid' | 'parent') => { setType(t); setPage(1); };
 
@@ -180,12 +181,12 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
             <thead><tr><th>{p.noun[0].toUpperCase() + p.noun.slice(1)}</th>{p.media ? <th>{p.media.linkHeader}</th> : null}<th>{p.parentHeader}</th>{p.media ? null : <th>Type</th>}<th>Status</th><th className="narrow-col"><span className="sr-only">Actions</span></th></tr></thead>
             <tbody className={loading ? 'dim' : ''}>
               {rows.map(r => (
-                <tr key={r._id} className="clickable" onClick={open(r)}>
+                <tr key={r._id} className="clickable" onClick={openRow(r)}>
                   <td>
                     <div className={p.media ? 'mcell' : undefined}>
                       {p.media ? <Thumb src={r.imageUrl ? p.assetBase + r.imageUrl : null} name={p.nameOf(r)} /> : null}
                       <div className="mtext">
-                        <button type="button" className="strong-link linkbtn" onClick={() => setDetail(r)}>{p.nameOf(r)}</button>
+                        <Link className="strong-link" href={`${p.base}/${r._id}`}>{p.nameOf(r)}</Link>
                         <div className="desc">{p.subOf(r)}</div>
                         {p.media ? <div className="desc mob-link">{p.media.linkOf(r).replace(/^https?:\/\//i, '')}</div> : null}
                       </div>
@@ -206,7 +207,7 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
                               onClick={e => { e.stopPropagation(); setMenu(menu === r._id ? null : r._id); }}>⋯</button>
                       {menu === r._id ? (
                         <div className="menu" role="menu">
-                          <button type="button" role="menuitem" onClick={() => { setMenu(null); setDetail(r); }}>View details</button>
+                          <Link role="menuitem" href={`${p.base}/${r._id}`}>Open</Link>
                           <Link role="menuitem" href={`${p.base}/${r._id}/edit`}>Edit</Link>
                           <button type="button" role="menuitem" className="dn" onClick={() => { setMenu(null); setConfirm(r); }}>Delete…</button>
                         </div>
@@ -222,37 +223,6 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
       )}
       <Pager page={page} total={total} per={PER} onPage={setPage} />
 
-      <SidePanel open={Boolean(detail)} title={detail ? p.nameOf(detail) : ''} subtitle={detail ? p.subOf(detail) : undefined} onClose={() => setDetail(null)}
-                 icon={<span className="kpi-ic teal"><Icon name="folder" /></span>}
-                 footer={detail ? (<><Link className="btn primary" href={`${p.base}/${detail._id}/edit`}>Edit</Link><Link className="btn" href={`${p.base}/${detail._id}`}>Open page</Link><button type="button" className="btn danger-o" onClick={() => setConfirm(detail)}>Delete…</button></>) : null}>
-        {detail ? (
-          <>
-            <button type="button" className="sw" role="switch" aria-checked={detail.isActive} onClick={() => setActive(detail, !detail.isActive)}
-                    aria-label={`Status: ${detail.isActive ? 'active' : 'inactive'}. Press to change`}><i /><span>{detail.isActive ? 'Active' : 'Inactive'}</span></button>
-            {p.media ? (
-              <section>
-                <Thumb src={detail.imageUrl ? p.assetBase + detail.imageUrl : null} name={p.nameOf(detail)} />
-                <div className="sec-title" style={{ marginTop: 12 }}>{p.media.linkHeader}</div>
-                <LinkCell url={p.media.linkOf(detail)} onCopy={() => say('Link copied.')} />
-              </section>
-            ) : null}
-            <section>
-              <div className="sec-title">Details</div>
-              <ul className="rows">
-                <li><span className="grow">Type</span><strong>{kindLabel(detail.type)}</strong></li>
-                <li><span className="grow">Show order</span><strong>{detail.sorting}</strong></li>
-                {(p.panelExtra?.(detail) ?? []).map(([k, v]) => <li key={k}><span className="grow">{k}</span><strong>{v}</strong></li>)}
-              </ul>
-            </section>
-            <section><div className="sec-title">Description</div><p>{detail.description?.trim() || 'No description'}</p></section>
-            {detail.imageUrl && !p.media ? (
-              <section><div className="sec-title">Image</div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="pic" src={p.assetBase + detail.imageUrl} alt={`${p.nameOf(detail)} image`} /></section>
-            ) : null}
-          </>
-        ) : null}
-      </SidePanel>
 
       <ConfirmDialog open={Boolean(confirm)} danger busy={busy} title={`Delete “${confirm ? p.nameOf(confirm) : ''}”?`}
                      body="Items that depend on it may stop showing in the app." confirmLabel={`Delete ${p.noun}`} onConfirm={remove} onCancel={() => setConfirm(null)} />
