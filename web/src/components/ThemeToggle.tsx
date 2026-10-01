@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import Icon from './icons';
 import { THEME_COOKIE, type Theme } from '@/lib/theme';
 
-/** The server always renders an explicit theme, so the attribute is the single source of truth. */
-const currentTheme = (): Theme => (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
+/** The server always renders an explicit theme, so the attribute is the single source of truth.
+ *  Dark is the default, so anything that is not an explicit "light" is dark. */
+const currentTheme = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
-/** Light/dark switch. Light is the default; the user's choice is remembered for a year. */
+/** Light/dark switch. Dark is the default; the user's choice is remembered for a year. */
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme | null>(null);
   useEffect(() => setTheme(currentTheme()), []);

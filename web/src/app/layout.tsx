@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = { title: 'Etern Admin' };
 
-// Light is the default. A user's choice is stored in a cookie, so the server renders the right colours on the first
-// paint (no inline script needed).
+// Dark is the default. A user's choice is stored in a cookie, so the server renders the right colours on the first
+// paint (no inline script needed, and no flash of the wrong theme).
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value) ?? DEFAULT_THEME;
   return (
