@@ -1,0 +1,5 @@
+# /etc/caddy/Caddyfile  (replace the address with your real one; DNS must already point at this server)
+admin-next.yourdomain.com {
+	reverse_proxy 127.0.0.1:3000
+	encode gzip
+}
