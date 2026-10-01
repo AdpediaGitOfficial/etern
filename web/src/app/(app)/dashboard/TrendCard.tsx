@@ -42,7 +42,7 @@ export default function TrendCard({ chart, retry, busy }: { chart: Result<Subscr
       <div className="ch">
         <div>
           <h2>Plans bought per day</h2>
-          {chart.ok && points.length ? <p className="muted">{points.length} days · {num(total)} plans bought · hover for daily values</p> : null}
+          {chart.ok && points.length ? <p className="muted">{points.length} day{points.length === 1 ? '' : 's'} · {num(total)} plan{total === 1 ? '' : 's'} bought · hover for daily values</p> : null}
         </div>
         {chart.ok && points.length ? (
           <label className="tg"><input type="checkbox" checked={table} onChange={e => setTable(e.target.checked)} /> Table view</label>
