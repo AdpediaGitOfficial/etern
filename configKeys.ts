@@ -25,6 +25,18 @@ const configKeys = {
    */
   ADMIN_TOKEN_EXPIRY: process.env.ADMIN_TOKEN_EXPIRY || '12h',
   USER_TOKEN_EXPIRY: process.env.USER_TOKEN_EXPIRY || '365d',
+
+  /**
+   * Whether a student's token must still be one of their live sessions.
+   *
+   * On by default: without it, signing out does nothing — the record is marked
+   * inactive but the token keeps working, which is the bug this exists to fix.
+   *
+   * Set to "off" to fall back to checking the signature alone. The one reason to
+   * is fallout on the day it ships: a student whose stored session does not match
+   * the token their app is holding has to sign in once more.
+   */
+  STUDENT_SESSION_CHECK: (process.env.STUDENT_SESSION_CHECK || 'on').toLowerCase(),
 };
 
 export default configKeys;

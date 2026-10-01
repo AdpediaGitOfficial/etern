@@ -31,6 +31,25 @@ leaked token was valid forever. Both lifetimes are now set per role:
 Both take a jsonwebtoken duration (`"12h"`, `"30d"`). A malformed value stops the
 server at start-up rather than failing every sign-in.
 
+Every token now also carries a unique id (`jti`). Without one the payload was
+just the role and the user id, and `iat` has one-second resolution, so two
+sign-ins in the same second produced identical tokens and sessions could not be
+told apart.
+
+#### Student sessions
+
+A student's token must be one of their live sessions, not merely correctly
+signed. Signing out blanks the stored token, so the app's copy stops working —
+previously sign-out marked the record inactive and the token kept working.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `STUDENT_SESSION_CHECK` | `on` | Set to `off` to check the signature alone, as before. |
+
+This costs one indexed read per student request. On the day it ships, a student
+whose stored session does not match the token their app is holding signs in once
+more; `off` is the lever if that causes trouble.
+
 Tokens already issued keep their original 273-year expiry — changing these
 settings only affects tokens signed from now on. For an admin, changing their
 password invalidates every token issued before the change (Settings → Your

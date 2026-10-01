@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
 import { verifyToken } from '../authentication/authentication';
-import { getPasswordChangedAt } from '../user/repos/registerUserRepo';
+import { getPasswordChangedAt, hasActiveUserToken } from '../user/repos/registerUserRepo';
+import configKeys from '../configKeys';
 import AppError from '../common/appError';
 import { HttpStatus } from '../common/httpStatus';
 import { responseMessages } from '../config/localization';
@@ -9,27 +10,52 @@ import { JwtPayload } from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import logger from '../config/logger';
 
-export function authenticateUser(req: Request, res: Response, next: NextFunction): void {
-  // Check for JWT token
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+/**
+ * Student routes, used by the mobile app.
+ *
+ * A valid signature is not enough: the token must still be one of the student's
+ * live sessions. Signing out blanks the stored token, so without this check it
+ * kept working and "sign out" changed nothing a thief would notice.
+ *
+ * That costs one indexed read per request, on the app's hottest path. It is the
+ * only way to make a stateless token revocable, and STUDENT_SESSION_CHECK=off
+ * turns it back into a signature-only check if it ever needs to come out quickly.
+ */
+export const authenticateUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer')) {
+      throw new AppError(responseMessages.jwt_token_required, HttpStatus.UNAUTHORIZED);
+    }
     const token = req.headers.authorization.split(' ')[1];
+
+    let user: JwtPayload | string;
     try {
-      const user: JwtPayload | string = verifyToken(token);
-      if (!user || typeof user === 'string' || user?.role !== 'user') {
-        throw new AppError(responseMessages.invalid_token, HttpStatus.UNAUTHORIZED);
-      }
-      // Store user data in res.locals for use in other middleware and routes
-      res.locals.userId = user.userId as string;
-      next();
-      return;
+      user = verifyToken(token);
     } catch (error) {
       logger.error(error);
       throw new AppError(responseMessages.unauthorized_user, HttpStatus.UNAUTHORIZED);
     }
-  }
-  // If no JWT token is provided
-  throw new AppError(responseMessages.jwt_token_required, HttpStatus.UNAUTHORIZED);
-}
+    if (!user || typeof user === 'string' || user?.role !== 'user') {
+      throw new AppError(responseMessages.invalid_token, HttpStatus.UNAUTHORIZED);
+    }
+
+    const userId = user.userId as string;
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new AppError(responseMessages.invalid_token, HttpStatus.UNAUTHORIZED);
+    }
+
+    if (configKeys.STUDENT_SESSION_CHECK !== 'off') {
+      if (!(await hasActiveUserToken(userId, token))) {
+        throw new AppError(responseMessages.unauthorized_user, HttpStatus.UNAUTHORIZED);
+      }
+    }
+
+    res.locals.userId = userId;
+    // Outside the try above on purpose: an error thrown further down the stack is
+    // that route's error, and must not be reported as an authentication failure.
+    next();
+  },
+);
 
 /**
  * A JWT's `iat` is whole seconds rounded down, so a token issued at 10:00:00.900

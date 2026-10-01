@@ -55,26 +55,39 @@ export const setUserVerified = async (id: string): Promise<{ _id: string } | nul
   );
 };
 
+/**
+ * Records the token for one device, replacing whatever that device had before.
+ *
+ * isActive must be set here, not only on create: signing out sets it to false, and
+ * without putting it back a returning student's token would never be stored. The
+ * previous version read the record ignoring isActive but then updated with a filter
+ * requiring isActive: true, so after a sign-out this silently saved nothing.
+ */
 export const saveUserToken = async (
   userId: string,
   deviceId: string,
   deviceType: string,
   authToken: string,
 ): Promise<IUserAuth | null> => {
-  const existingSession = await userAuthModel.findOne({
-    userId,
-    deviceType,
-  });
-  if (!existingSession) {
-    return await userAuthModel.create({ userId, deviceId, deviceType, authToken, isActive: true });
-  } else {
-    return await userAuthModel.findOneAndUpdate(
-      { userId, deviceType, isActive: true },
-      { authToken, deviceId },
-      { new: true },
-    );
-  }
+  return await userAuthModel.findOneAndUpdate(
+    { userId, deviceType },
+    { authToken, deviceId, isActive: true },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  );
 };
+
+/**
+ * True when this exact token is one of the student's live sessions.
+ *
+ * Signing out blanks the stored token and clears isActive, so the token the app is
+ * still holding stops being accepted. Signing in again on the same device replaces
+ * the stored token, which ends the previous session on that device.
+ */
+export const hasActiveUserToken = async (userId: string, authToken: string): Promise<boolean> => {
+  const match = await userAuthModel.exists({ userId, authToken, isActive: true });
+  return match !== null;
+};
+
 
 export const uploadAvatar = async (
   id: string,

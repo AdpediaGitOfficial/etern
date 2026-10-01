@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import configKeys from '../configKeys';
 
@@ -33,9 +34,17 @@ export function validateTokenConfig(): void {
   tokenExpiry('user');
 }
 
+/**
+ * Every token gets its own id. Without it the payload is just the role and the
+ * user id, and `iat` only has one-second resolution, so two sign-ins in the same
+ * second produced byte-identical tokens. Sessions then cannot be told apart: one
+ * device signing out would invalidate the string the other device was holding, or
+ * fail to invalidate its own.
+ */
 export function generateToken(payload: { role: string; userId: string }): string {
   return jwt.sign(payload, configKeys.JWT_SECRET, {
     expiresIn: tokenExpiry(payload.role) as jwt.SignOptions['expiresIn'],
+    jwtid: randomUUID(),
   });
 }
 
