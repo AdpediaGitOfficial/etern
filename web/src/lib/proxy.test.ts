@@ -13,12 +13,17 @@ describe('proxy allowlist', () => {
     ['GET', 'subcategory/all'], ['POST', 'subcategory'], ['PUT', `subcategory/${id}`],
     ['GET', `subcategory/by-categoryAdmin/${id}/kid`], ['GET', `subcategory/by-categoryAdmin/${id}/parent`],
     ['GET', 'coursematerial/all'], ['POST', 'coursematerial'], ['PUT', `coursematerial/${id}`], ['DELETE', `coursematerial/${id}`],
+    // Deliberately opened for Settings → Administrators. It is admin-authenticated on the
+    // backend, and it is the only way to add a second admin without database access.
+    ['POST', 'user/register-admin'],
   ])('allows %s %s', (method, path) => {
     expect(isAllowed(method, path)).toBe(true);
   });
 
   it.each([
-    ['GET', 'user/all'], ['POST', 'user/register-admin'], ['POST', 'user/login'], ['GET', 'subscription/revenueDetails'],
+    // Still refused: listing users, signing in again, and everything else under user/.
+    ['GET', 'user/all'], ['POST', 'user/login'], ['PUT', `user/profile-update/${id}`], ['POST', 'user/delete-account'],
+    ['GET', 'subscription/revenueDetails'],
     ['GET', 'package/all'], // the mobile-app endpoint, not the admin one
     ['GET', 'student/fixedOtp/' + id], // the fixed-OTP backdoor is deliberately unreachable
     ['POST', `student/${id}`], ['PUT', 'student/allAdmin'], ['DELETE', 'student/allAdmin'],

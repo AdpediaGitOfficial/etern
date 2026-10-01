@@ -24,6 +24,11 @@ export function sessionCookieName(): string {
   return cookieSecure() ? '__Host-etern_session' : 'etern_session';
 }
 
+/** Display-only companion to the session cookie: the signed-in admin's name and email. */
+export function accountCookieName(): string {
+  return cookieSecure() ? '__Host-etern_account' : 'etern_account';
+}
+
 /** Fail fast on a bad deployment instead of failing on the first request. */
 export function validateEnv(): void {
   const raw = process.env.BACKEND_URL;

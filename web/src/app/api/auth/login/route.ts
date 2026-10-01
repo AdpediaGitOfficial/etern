@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { backendUrl, cookieSecure, sessionCookieName, sessionMaxAgeSeconds } from '@/lib/config';
+import { accountFromLogin, encodeAccount } from '@/lib/account';
+import { accountCookieName, backendUrl, cookieSecure, sessionCookieName, sessionMaxAgeSeconds } from '@/lib/config';
 import { RateLimiter } from '@/lib/rateLimit';
 import { clientIp, forbidden, isSameSiteRequest } from '@/lib/security';
 
@@ -59,12 +60,18 @@ export async function POST(req: Request) {
 
   byEmail.reset(emailKey);
   const out = NextResponse.json({ ok: true });
-  out.cookies.set(sessionCookieName(), token, {
+  const cookie = {
     httpOnly: true,
     secure: cookieSecure(),
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     path: '/',
     maxAge: sessionMaxAgeSeconds(),
-  });
+  };
+  out.cookies.set(sessionCookieName(), token, cookie);
+
+  // The backend returns the profile alongside the token, so the name in the sidebar
+  // costs no extra request. Display only — the session token is what authorises.
+  const account = accountFromLogin(data?.result);
+  if (account) out.cookies.set(accountCookieName(), encodeAccount(account), cookie);
   return out;
 }

@@ -22,6 +22,8 @@ const PAGES: Entry[] = [
   { id: 'p-sub-new', label: 'Add sub category', hint: 'Action', href: '/sub-categories/new' },
   { id: 'p-cm', label: 'Course materials', hint: 'Page', href: '/course-materials' },
   { id: 'p-cm-new', label: 'Add course material', hint: 'Action', href: '/course-materials/new' },
+  { id: 'p-set', label: 'Settings', hint: 'Page', href: '/settings' },
+  { id: 'p-admin-new', label: 'Add administrator', hint: 'Action', href: '/settings' },
 ];
 
 /** ⌘K / Ctrl+K quick search: jump to any page, or find a student by name or mobile number. */

@@ -1,12 +1,15 @@
-import { cookieSecure, sessionCookieName } from '@/lib/config';
+import { accountCookieName, cookieSecure, sessionCookieName } from '@/lib/config';
 import { forbidden, isSameSiteRequest } from '@/lib/security';
 
+/** Signing out clears the display name too, or the next visitor to this browser sees who was here last. */
 function clear(location: string) {
   const headers = new Headers({ Location: location, 'Cache-Control': 'no-store' });
-  headers.append(
-    'Set-Cookie',
-    `${sessionCookieName()}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${cookieSecure() ? '; Secure' : ''}`,
-  );
+  for (const name of [sessionCookieName(), accountCookieName()]) {
+    headers.append(
+      'Set-Cookie',
+      `${name}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${cookieSecure() ? '; Secure' : ''}`,
+    );
+  }
   return new Response(null, { status: 303, headers });
 }
 

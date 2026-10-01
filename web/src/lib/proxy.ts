@@ -16,6 +16,8 @@ const crud = (name: string, list = 'all'): Rule[] => [
 ];
 
 const ALLOWED: Rule[] = [
+  // settings
+  rule('POST', 'user/register-admin'),
   // users
   rule('GET', 'student/allAdmin'),
   rule('GET', 'student/export-students'),

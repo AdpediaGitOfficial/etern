@@ -33,7 +33,7 @@ export default function Topbar() {
       <div className="topbar-actions">
         <ThemeToggle />
         <form action="/api/auth/logout" method="post">
-          <button type="submit" className="btn"><Icon name="logout" size={16} /><span className="hide-sm">Sign out</span></button>
+          <button type="submit" className="btn" aria-label="Sign out"><Icon name="logout" size={16} /><span className="hide-sm">Sign out</span></button>
         </form>
       </div>
       <CommandPalette open={open} onClose={() => setOpen(false)} />

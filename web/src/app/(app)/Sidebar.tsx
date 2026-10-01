@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import AccountMenu from '@/components/AccountMenu';
 import Icon, { type IconName } from '@/components/icons';
 import { useShell } from '@/components/ShellProvider';
+import type { Account } from '@/lib/account';
 
 interface NavItem { label: string; href: string; icon: IconName; badgeKey?: 'expiring' }
 const SECTIONS: { title: string; items: NavItem[] }[] = [
@@ -27,7 +29,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
 
 const STUDENT_DETAIL = /^\/users\/[0-9a-f]{24}$/i;
 
-export default function Sidebar({ expiringCount }: { expiringCount: number }) {
+export default function Sidebar({ expiringCount, account }: { expiringCount: number; account: Account }) {
   const path = usePathname();
   const { navOpen, setNavOpen } = useShell();
 
@@ -57,10 +59,7 @@ export default function Sidebar({ expiringCount }: { expiringCount: number }) {
             </div>
           ))}
         </nav>
-        <div className="side-user">
-          <span className="avatar" aria-hidden="true">A</span>
-          <div><strong>Admin</strong><small>Etern administrator</small></div>
-        </div>
+        <AccountMenu account={account} />
       </aside>
     </>
   );
