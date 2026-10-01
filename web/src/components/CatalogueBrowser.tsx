@@ -52,13 +52,13 @@ function Thumb({ src, name }: { src: string | null; name: string }) {
   ) : <span className="mt ph" aria-hidden="true">{name.trim().slice(0, 1).toUpperCase() || '?'}</span>;
 }
 
-function LinkCell({ url, onCopy }: { url: string; onCopy: () => void }) {
+function LinkCell({ url, onCopy }: { url: string; onCopy: (ok: boolean) => void }) {
   const href = safeHref(url);
   if (!url) return <span className="muted">No link</span>;
   return (
     <div className="linkcell">
       {href ? <a href={href} target="_blank" rel="noopener noreferrer" title={url}>{url.replace(/^https?:\/\//i, '')}</a> : <span className="muted" title="Not a web link">{url}</span>}
-      <button type="button" className="btn ghost sm" aria-label="Copy link" onClick={async () => { try { await navigator.clipboard.writeText(url); onCopy(); } catch { /* clipboard blocked: nothing to do */ } }}>Copy</button>
+      <button type="button" className="btn ghost sm" aria-label="Copy link" onClick={async () => { try { await navigator.clipboard.writeText(url); onCopy(true); } catch { onCopy(false); } }}>Copy</button>
     </div>
   );
 }
@@ -192,7 +192,7 @@ export default function CatalogueBrowser<T extends Row>(p: Props<T>) {
                       </div>
                     </div>
                   </td>
-                  {p.media ? <td><LinkCell url={p.media.linkOf(r)} onCopy={() => say('Link copied.')} /></td> : null}
+                  {p.media ? <td><LinkCell url={p.media.linkOf(r)} onCopy={(copied: boolean) => (copied ? say('Link copied.') : say('Copy is blocked in this browser. Select the link instead.', { tone: 'bad' }))} /></td> : null}
                   <td>{p.parentOf(r) || '—'}</td>
                   {p.media ? null : <td><span className="chip">{kindLabel(r.type)}</span></td>}
                   <td>
